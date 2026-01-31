@@ -284,6 +284,40 @@ describe('GhostClient', () => {
       const response = await client.get<{ posts: typeof expectedPosts }>('/posts/');
       expect(response.posts).toEqual(expectedPosts);
     });
+
+    it('should properly encode special characters in query params', async () => {
+      const client = new GhostClient({
+        url: TEST_URL,
+        apiKey: TEST_API_KEY,
+      });
+
+      mockFetch({ status: 200, body: { posts: [] } }, (url) => {
+        const parsed = new URL(url);
+        // Ghost filter syntax with special characters
+        expect(parsed.searchParams.get('filter')).toBe('status:published+tag:news');
+      });
+
+      await client.get('/posts/', {
+        params: { filter: 'status:published+tag:news' },
+      });
+    });
+
+    it('should handle boolean query parameters', async () => {
+      const client = new GhostClient({
+        url: TEST_URL,
+        apiKey: TEST_API_KEY,
+      });
+
+      mockFetch({ status: 200, body: { posts: [] } }, (url) => {
+        const parsed = new URL(url);
+        expect(parsed.searchParams.get('include_tags')).toBe('true');
+        expect(parsed.searchParams.get('include_authors')).toBe('false');
+      });
+
+      await client.get('/posts/', {
+        params: { include_tags: true, include_authors: false },
+      });
+    });
   });
 
   describe('POST requests', () => {
@@ -301,6 +335,21 @@ describe('GhostClient', () => {
       });
 
       await client.post('/posts/', { body: postData });
+    });
+
+    it('should include Content-Type for POST with empty object body', async () => {
+      const client = new GhostClient({
+        url: TEST_URL,
+        apiKey: TEST_API_KEY,
+      });
+
+      mockFetch({ status: 201, body: { posts: [] } }, (_url, init) => {
+        const headers = init?.headers as Headers;
+        expect(headers.get('Content-Type')).toBe('application/json');
+        expect(init?.body).toBe('{}');
+      });
+
+      await client.post('/posts/', { body: {} });
     });
   });
 
@@ -335,6 +384,20 @@ describe('GhostClient', () => {
 
       const result = await client.delete('/posts/1/');
       expect(result).toBeUndefined();
+    });
+
+    it('should not include Content-Type for DELETE requests', async () => {
+      const client = new GhostClient({
+        url: TEST_URL,
+        apiKey: TEST_API_KEY,
+      });
+
+      mockFetch({ status: 204 }, (_url, init) => {
+        const headers = init?.headers as Headers;
+        expect(headers.get('Content-Type')).toBeNull();
+      });
+
+      await client.delete('/posts/1/');
     });
   });
 
@@ -630,6 +693,13 @@ describe('GhostApiError', () => {
       expect(error.isValidationError()).toBe(true);
     });
 
+    it('should identify validation errors by type even with non-400 status', () => {
+      const error = new GhostApiError('Invalid', 422, [
+        { message: 'Invalid', type: 'ValidationError' },
+      ]);
+      expect(error.isValidationError()).toBe(true);
+    });
+
     it('should identify authentication errors', () => {
       const error = new GhostApiError('Unauthorized', 401);
       expect(error.isAuthenticationError()).toBe(true);
@@ -642,6 +712,13 @@ describe('GhostApiError', () => {
 
     it('should identify not found errors', () => {
       const error = new GhostApiError('Not found', 404);
+      expect(error.isNotFoundError()).toBe(true);
+    });
+
+    it('should identify not found errors by type', () => {
+      const error = new GhostApiError('Not found', 0, [
+        { message: 'Not found', type: 'NotFoundError' },
+      ]);
       expect(error.isNotFoundError()).toBe(true);
     });
 
@@ -658,6 +735,25 @@ describe('GhostApiError', () => {
       expect(error500.isServerError()).toBe(true);
       expect(error502.isServerError()).toBe(true);
       expect(error503.isServerError()).toBe(true);
+    });
+  });
+
+  describe('code property', () => {
+    it('should extract code from first error', () => {
+      const error = new GhostApiError('Test', 400, [
+        { message: 'Test', code: 'SOME_CODE' },
+      ]);
+      expect(error.code).toBe('SOME_CODE');
+    });
+
+    it('should have undefined code when not provided', () => {
+      const error = new GhostApiError('Test', 400, [{ message: 'Test' }]);
+      expect(error.code).toBeUndefined();
+    });
+
+    it('should have undefined code when errors array is empty', () => {
+      const error = new GhostApiError('Test', 400, []);
+      expect(error.code).toBeUndefined();
     });
   });
 });
