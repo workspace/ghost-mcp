@@ -16,8 +16,18 @@ export const TOOL_NAME = 'content_read_author';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Read a single author from the Ghost Content API by ID or slug. Returns the author data with optional post count.';
+export const TOOL_DESCRIPTION = `Read a single public author by ID or slug (read-only).
+
+USE CASE:
+- Display author profile page
+- Get author bio and social links for bylines
+
+IDENTIFIER: Provide either 'id' OR 'slug', not both.
+
+NOTE: Only returns authors with published posts.
+For staff users without published posts, use admin_read_user instead.
+
+RETURNS: Single author object with bio, social links, and optional post count.`;
 
 /**
  * Executes the read author tool.

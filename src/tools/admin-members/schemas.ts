@@ -69,8 +69,14 @@ export const AdminBrowseMembersInputSchema = z.object({
  */
 export const AdminReadMemberInputSchema = z
   .object({
-    id: z.string().optional().describe('Member ID'),
-    email: z.string().optional().describe('Member email address'),
+    id: z
+      .string()
+      .optional()
+      .describe('Member ID. Provide either id OR email, not both.'),
+    email: z
+      .string()
+      .optional()
+      .describe('Member email address. Provide either id OR email, not both.'),
     include: z
       .string()
       .optional()
@@ -107,11 +113,17 @@ export const AdminCreateMemberInputSchema = z.object({
   labels: z
     .array(LabelReferenceSchema)
     .optional()
-    .describe('Labels to assign to the member'),
+    .describe(
+      'Labels to assign. Each object needs {id}, {name}, or {slug}. ' +
+        'Example: [{"name": "VIP"}, {"slug": "early-access"}]'
+    ),
   newsletters: z
     .array(NewsletterReferenceSchema)
     .optional()
-    .describe('Newsletters to subscribe the member to'),
+    .describe(
+      'Newsletters to subscribe to. Each object requires {id}. ' +
+        'Get IDs from admin_browse_newsletters. Example: [{"id": "newsletter-uuid"}]'
+    ),
   comped: z
     .boolean()
     .optional()
@@ -126,7 +138,7 @@ export const AdminUpdateMemberInputSchema = z.object({
   updated_at: z
     .string()
     .describe(
-      'Current updated_at timestamp for conflict prevention (required)'
+      'Current updated_at timestamp from admin_read_member (required). Prevents concurrent edit conflicts.'
     ),
   name: z.string().optional().describe('Member name'),
   note: z
@@ -141,11 +153,17 @@ export const AdminUpdateMemberInputSchema = z.object({
   labels: z
     .array(LabelReferenceSchema)
     .optional()
-    .describe('Labels to assign (replaces existing labels)'),
+    .describe(
+      'Labels to assign (REPLACES all existing). Each: {id}, {name}, or {slug}. ' +
+        'Include all desired labels.'
+    ),
   newsletters: z
     .array(NewsletterReferenceSchema)
     .optional()
-    .describe('Newsletters to subscribe to (replaces existing subscriptions)'),
+    .describe(
+      'Newsletters to subscribe to (REPLACES all existing). Each: {id}. ' +
+        'Include all desired newsletter subscriptions.'
+    ),
   comped: z
     .boolean()
     .optional()

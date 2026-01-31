@@ -16,8 +16,18 @@ export const TOOL_NAME = 'content_browse_pages';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Browse pages from the Ghost Content API. Returns published pages with optional filtering, pagination, and related data. Pages are static resources not included in channels or collections.';
+export const TOOL_DESCRIPTION = `Browse published pages from Ghost Content API (read-only, public content).
+
+USE CASE:
+- Display static pages (About, Contact, Terms) on a website frontend
+- Build site navigation from published pages
+- List all available pages for sitemap generation
+
+NOTE: Only returns published pages visible to the public.
+Pages are static content NOT shown in RSS feeds or blog listings.
+For drafts or all pages, use admin_browse_pages instead.
+
+RETURNS: Array of pages with pagination metadata (page, pages, total).`;
 
 /**
  * Executes the browse pages tool.

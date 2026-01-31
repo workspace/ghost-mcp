@@ -10,8 +10,20 @@ import type { AdminUpdateNewsletterInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_update_newsletter';
 
-export const TOOL_DESCRIPTION =
-  'Update an existing newsletter via the Ghost Admin API. Requires the newsletter ID and updated_at timestamp for conflict prevention. Returns the updated newsletter.';
+export const TOOL_DESCRIPTION = `Update an existing newsletter via Ghost Admin API.
+
+USE CASE:
+- Change newsletter name, description, or branding
+- Update sender email or reply-to settings
+- Modify design (header image, footer content, etc.)
+
+PREREQUISITE: Call admin_read_newsletter first to get the current updated_at timestamp.
+
+WORKFLOW:
+1. admin_read_newsletter(id: "newsletter-id") -> get updated_at value
+2. admin_update_newsletter(id: "newsletter-id", updated_at: "...", name: "New Name")
+
+RETURNS: Updated newsletter with new updated_at timestamp.`;
 
 export async function executeAdminUpdateNewsletter(
   client: GhostClient,

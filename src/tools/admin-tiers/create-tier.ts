@@ -10,8 +10,29 @@ import type { AdminCreateTierInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_create_tier';
 
-export const TOOL_DESCRIPTION =
-  'Create a new tier via the Ghost Admin API. Requires at minimum a name. For paid tiers, also requires currency and at least one price (monthly_price or yearly_price). Returns the created tier.';
+export const TOOL_DESCRIPTION = `Create a new membership tier via Ghost Admin API.
+
+USE CASE:
+- Set up free membership tier for newsletter access
+- Create paid subscription tiers with monthly/yearly pricing
+- Add premium content access levels
+
+FOR FREE TIERS:
+- Set type: 'free' (default)
+- No pricing required
+
+FOR PAID TIERS:
+- Set type: 'paid'
+- currency: Required (e.g., "usd", "eur", "gbp")
+- monthly_price and/or yearly_price: At least one required
+- Prices in smallest unit (cents): 500 = $5.00 USD
+
+BENEFITS: Array of benefit strings shown to potential subscribers.
+Example: ["Access to premium articles", "Weekly newsletter", "Discord access"]
+
+NOTE: Tier type and currency CANNOT be changed after creation.
+
+RETURNS: Created tier with id (needed for admin_create_offer).`;
 
 export async function executeAdminCreateTier(
   client: GhostClient,

@@ -10,8 +10,20 @@ import type { AdminUpdateTagInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_update_tag';
 
-export const TOOL_DESCRIPTION =
-  'Update an existing tag via the Ghost Admin API. Requires the tag ID and updated_at timestamp for conflict prevention. Returns the updated tag.';
+export const TOOL_DESCRIPTION = `Update an existing tag via Ghost Admin API.
+
+USE CASE:
+- Rename a tag or change its slug
+- Update tag description or feature image
+- Modify SEO metadata for tag pages
+
+PREREQUISITE: Call admin_read_tag first to get the current updated_at timestamp.
+
+WORKFLOW:
+1. admin_read_tag(id: "tag-id") -> get updated_at value
+2. admin_update_tag(id: "tag-id", updated_at: "...", name: "New Name")
+
+RETURNS: Updated tag with new updated_at timestamp.`;
 
 export async function executeAdminUpdateTag(
   client: GhostClient,

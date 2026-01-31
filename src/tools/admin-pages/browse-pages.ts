@@ -10,8 +10,22 @@ import type { AdminBrowsePagesInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_browse_pages';
 
-export const TOOL_DESCRIPTION =
-  'Browse pages from the Ghost Admin API. Returns all pages including drafts with optional filtering, pagination, and related data. Pages are static content not included in feeds or collections.';
+export const TOOL_DESCRIPTION = `Browse all pages from Ghost Admin API, including drafts.
+
+USE CASE:
+- List all static pages (About, Contact, Terms, etc.)
+- Find pages by status (draft, published, scheduled)
+- Search for specific pages by title or slug
+
+NOTE: Pages are static content NOT shown in RSS feeds or blog listings.
+For blog posts, use admin_browse_posts instead.
+
+FILTER EXAMPLES:
+- status:draft (draft pages only)
+- status:published (published pages)
+- slug:about (page with specific slug)
+
+RETURNS: Array of pages with pagination metadata (page, pages, total).`;
 
 export async function executeAdminBrowsePages(
   client: GhostClient,

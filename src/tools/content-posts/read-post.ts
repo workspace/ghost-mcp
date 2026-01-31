@@ -16,8 +16,19 @@ export const TOOL_NAME = 'content_read_post';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Read a single post from the Ghost Content API by ID or slug. Returns the full post data with optional related data.';
+export const TOOL_DESCRIPTION = `Read a single published post by ID or slug (read-only, public content).
+
+USE CASE:
+- Display a single blog post page on your website
+- Fetch post content for embedding or social sharing
+- Get full post details including HTML content
+
+IDENTIFIER: Provide either 'id' OR 'slug', not both.
+
+NOTE: Only returns published posts visible to the public.
+For drafts or scheduled posts, use admin_read_post instead.
+
+RETURNS: Single post object with requested fields and related data (tags, authors).`;
 
 /**
  * Executes the read post tool.

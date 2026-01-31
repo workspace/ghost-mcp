@@ -10,8 +10,23 @@ import type { AdminUpdatePostInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_update_post';
 
-export const TOOL_DESCRIPTION =
-  'Update an existing post via the Ghost Admin API. Requires the post ID and updated_at timestamp for conflict prevention. Returns the updated post.';
+export const TOOL_DESCRIPTION = `Update an existing post via Ghost Admin API.
+
+USE CASE:
+- Edit post content, title, or metadata
+- Publish a draft (change status to 'published')
+- Change visibility or featured status
+
+PREREQUISITE: Call admin_read_post first to get the current updated_at timestamp.
+
+WORKFLOW:
+1. admin_read_post(id: "post-id") -> get updated_at value
+2. admin_update_post(id: "post-id", updated_at: "...", title: "New Title")
+
+NOTE: Providing tags or authors arrays REPLACES all existing assignments.
+To add a tag, include all existing tags plus the new one.
+
+RETURNS: Updated post with new updated_at timestamp.`;
 
 export async function executeAdminUpdatePost(
   client: GhostClient,

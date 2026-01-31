@@ -83,8 +83,8 @@ export const AdminBrowsePostsInputSchema = z.object({
  */
 export const AdminReadPostInputSchema = z
   .object({
-    id: z.string().optional().describe('Post ID'),
-    slug: z.string().optional().describe('Post slug'),
+    id: z.string().optional().describe('Post ID. Provide either id OR slug, not both.'),
+    slug: z.string().optional().describe('Post slug (URL identifier). Provide either id OR slug, not both.'),
     include: z
       .string()
       .optional()
@@ -140,11 +140,17 @@ export const AdminCreatePostInputSchema = z.object({
   tags: z
     .array(TagReferenceSchema)
     .optional()
-    .describe('Tags to assign (each with id, name, or slug)'),
+    .describe(
+      'Tags to assign. Each object needs {id}, {name}, or {slug}. ' +
+        'Example: [{"name": "Technology"}, {"slug": "featured"}]'
+    ),
   authors: z
     .array(AuthorReferenceSchema)
     .optional()
-    .describe('Authors to assign (each with id, email, or slug)'),
+    .describe(
+      'Authors to assign. Each object needs {id}, {email}, or {slug}. ' +
+        'Example: [{"email": "author@site.com"}, {"slug": "john"}]'
+    ),
   custom_excerpt: z
     .string()
     .nullable()
@@ -209,7 +215,7 @@ export const AdminUpdatePostInputSchema = z.object({
   updated_at: z
     .string()
     .describe(
-      'Current updated_at timestamp for conflict prevention (required)'
+      'Current updated_at timestamp from admin_read_post (required). Prevents concurrent edit conflicts.'
     ),
   title: z.string().optional().describe('Post title'),
   slug: z.string().optional().describe('URL slug'),
@@ -239,11 +245,17 @@ export const AdminUpdatePostInputSchema = z.object({
   tags: z
     .array(TagReferenceSchema)
     .optional()
-    .describe('Tags to assign (replaces existing)'),
+    .describe(
+      'Tags to assign (REPLACES all existing). Each: {id}, {name}, or {slug}. ' +
+        'Include all desired tags, not just new ones.'
+    ),
   authors: z
     .array(AuthorReferenceSchema)
     .optional()
-    .describe('Authors to assign (replaces existing)'),
+    .describe(
+      'Authors to assign (REPLACES all existing). Each: {id}, {email}, or {slug}. ' +
+        'Include all desired authors.'
+    ),
   custom_excerpt: z
     .string()
     .nullable()

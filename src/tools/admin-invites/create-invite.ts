@@ -10,8 +10,22 @@ import type { AdminCreateInviteInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_create_invite';
 
-export const TOOL_DESCRIPTION =
-  'Create a staff invitation via the Ghost Admin API. Sends an email invitation to the specified address with the assigned role. Use admin_browse_roles to get available role IDs.';
+export const TOOL_DESCRIPTION = `Invite a new staff member via Ghost Admin API. Sends an email invitation.
+
+USE CASE:
+- Invite writers, editors, or administrators to your Ghost site
+- Onboard new team members with appropriate permissions
+- Grant access to specific roles (Author, Editor, Administrator, etc.)
+
+PREREQUISITE: Call admin_browse_roles first to get available role IDs.
+
+WORKFLOW:
+1. admin_browse_roles() -> find role_id for desired role (e.g., "Editor")
+2. admin_create_invite(email: "newstaff@example.com", role_id: "role-uuid")
+
+NOTE: The invited user will receive an email to set up their account.
+
+RETURNS: Created invite object with status and expiry information.`;
 
 export async function executeAdminCreateInvite(
   client: GhostClient,

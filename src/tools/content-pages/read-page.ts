@@ -16,8 +16,18 @@ export const TOOL_NAME = 'content_read_page';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Read a single page from the Ghost Content API by ID or slug. Returns the full page data with optional related data.';
+export const TOOL_DESCRIPTION = `Read a single published page by ID or slug (read-only, public content).
+
+USE CASE:
+- Display a static page (About, Contact, etc.) on your website
+- Fetch page content for embedding or rendering
+
+IDENTIFIER: Provide either 'id' OR 'slug', not both.
+
+NOTE: Only returns published pages visible to the public.
+For drafts or scheduled pages, use admin_read_page instead.
+
+RETURNS: Single page object with requested fields and related data.`;
 
 /**
  * Executes the read page tool.

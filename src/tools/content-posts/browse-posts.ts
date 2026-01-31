@@ -16,8 +16,22 @@ export const TOOL_NAME = 'content_browse_posts';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Browse posts from the Ghost Content API. Returns published posts with optional filtering, pagination, and related data.';
+export const TOOL_DESCRIPTION = `Browse published posts from Ghost Content API (read-only, public content).
+
+USE CASE:
+- Display a list of blog posts on a website frontend
+- Search for posts by tag, author, or custom NQL filters
+- Build RSS feeds or sitemaps from published content
+
+NOTE: Only returns published posts visible to the public.
+For drafts, scheduled, or all posts, use admin_browse_posts instead.
+
+FILTER EXAMPLES:
+- tag:getting-started (posts with specific tag)
+- featured:true (featured posts only)
+- author:john (posts by specific author)
+
+RETURNS: Array of posts with pagination metadata (page, pages, total).`;
 
 /**
  * Executes the browse posts tool.

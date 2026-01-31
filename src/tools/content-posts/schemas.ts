@@ -81,12 +81,18 @@ export const ReadPostInputSchema = z
     /**
      * Post ID to fetch.
      */
-    id: z.string().optional().describe('Post ID'),
+    id: z
+      .string()
+      .optional()
+      .describe('Post ID. Provide either id OR slug, not both.'),
 
     /**
      * Post slug to fetch.
      */
-    slug: z.string().optional().describe('Post slug'),
+    slug: z
+      .string()
+      .optional()
+      .describe('Post slug (URL identifier). Provide either id OR slug, not both.'),
 
     /**
      * Related data to include (comma-separated).

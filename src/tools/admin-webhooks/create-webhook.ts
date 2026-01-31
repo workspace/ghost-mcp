@@ -10,8 +10,29 @@ import type { AdminCreateWebhookInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_create_webhook';
 
-export const TOOL_DESCRIPTION =
-  'Create a new webhook via the Ghost Admin API. Requires event (trigger type) and target_url. Optional: name, secret, api_version. Returns the created webhook.';
+export const TOOL_DESCRIPTION = `Create a webhook to receive notifications about Ghost events.
+
+USE CASE:
+- Notify external service when a post is published
+- Trigger builds when content changes (site.changed)
+- Sync member data when members are added/edited
+
+COMMON EVENTS:
+- site.changed: Any content change (good for static site rebuilds)
+- post.published: When a post is published
+- post.added: When a new post is created
+- member.added: When a new member signs up
+- page.published: When a page is published
+
+ALL EVENTS: site.changed, post.added, post.deleted, post.edited,
+post.published, post.unpublished, post.scheduled, post.unscheduled,
+post.rescheduled, page.added, page.deleted, page.edited, page.published,
+page.unpublished, tag.added, tag.edited, tag.deleted, member.added,
+member.edited, member.deleted
+
+SECRET: Optional shared secret for webhook signature verification (HMAC).
+
+RETURNS: Created webhook with id for future updates/deletion.`;
 
 export async function executeAdminCreateWebhook(
   client: GhostClient,

@@ -10,8 +10,21 @@ import type { AdminBrowseTagsInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_browse_tags';
 
-export const TOOL_DESCRIPTION =
-  'Browse tags from the Ghost Admin API. Returns all tags with optional filtering, pagination, and related data.';
+export const TOOL_DESCRIPTION = `Browse all tags from Ghost Admin API.
+
+USE CASE:
+- List all available tags for post categorization
+- Find tag IDs/slugs to use with admin_create_post or admin_update_post
+- Get tag statistics (post counts)
+
+INCLUDE OPTIONS:
+- count.posts: Include post count for each tag
+
+FILTER EXAMPLES:
+- visibility:public (public tags only)
+- visibility:internal (internal tags starting with #)
+
+RETURNS: Array of tags with pagination metadata.`;
 
 export async function executeAdminBrowseTags(
   client: GhostClient,

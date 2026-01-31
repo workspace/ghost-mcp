@@ -16,8 +16,20 @@ export const TOOL_NAME = 'content_browse_authors';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Browse authors from the Ghost Content API. Returns authors with optional filtering, pagination, and post counts. Note: Only authors with published posts are returned.';
+export const TOOL_DESCRIPTION = `Browse public authors from Ghost Content API (read-only).
+
+USE CASE:
+- Display team/contributor page on website
+- Build author archive pages
+- Get post counts per author
+
+INCLUDE OPTIONS:
+- count.posts: Include number of published posts per author
+
+NOTE: Only authors with at least one published post are returned.
+For all staff users (including those without posts), use admin_browse_users instead.
+
+RETURNS: Array of authors with bio, social links, and optional post counts.`;
 
 /**
  * Executes the browse authors tool.

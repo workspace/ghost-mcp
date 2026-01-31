@@ -10,8 +10,21 @@ import type { AdminBrowseUsersInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_browse_users';
 
-export const TOOL_DESCRIPTION =
-  'Browse staff users from the Ghost Admin API. Returns users with optional filtering, pagination, and related data like roles and post counts.';
+export const TOOL_DESCRIPTION = `Browse staff users from Ghost Admin API.
+
+USE CASE:
+- List all staff members (authors, editors, administrators)
+- Get user IDs/slugs for assigning as post authors
+- Review staff roles and post counts
+
+INCLUDE OPTIONS:
+- roles: Include user roles
+- count.posts: Include post count per user
+
+NOTE: Staff users are different from members. Staff can create/edit content.
+For newsletter subscribers, use admin_browse_members instead.
+
+RETURNS: Array of staff users with roles and metadata.`;
 
 export async function executeAdminBrowseUsers(
   client: GhostClient,

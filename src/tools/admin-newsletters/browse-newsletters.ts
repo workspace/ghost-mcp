@@ -10,8 +10,20 @@ import type { AdminBrowseNewslettersInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_browse_newsletters';
 
-export const TOOL_DESCRIPTION =
-  'Browse newsletters from the Ghost Admin API. Returns all newsletters with optional filtering, pagination, and related data. Newsletters are email publications that members can subscribe to.';
+export const TOOL_DESCRIPTION = `Browse all newsletters from Ghost Admin API.
+
+USE CASE:
+- List all available newsletters
+- Get newsletter IDs for subscribing members (admin_create_member, admin_update_member)
+- Review newsletter configurations and subscriber counts
+
+FILTER EXAMPLES:
+- status:active (active newsletters only)
+- status:archived (archived newsletters)
+
+NOTE: Newsletter IDs are required when subscribing members to specific newsletters.
+
+RETURNS: Array of newsletters with sender settings and status.`;
 
 export async function executeAdminBrowseNewsletters(
   client: GhostClient,

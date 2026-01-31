@@ -16,8 +16,20 @@ export const TOOL_NAME = 'content_browse_tags';
 /**
  * Tool description for MCP registration.
  */
-export const TOOL_DESCRIPTION =
-  'Browse tags from the Ghost Content API. Returns tags with optional filtering, pagination, and post counts.';
+export const TOOL_DESCRIPTION = `Browse public tags from Ghost Content API (read-only).
+
+USE CASE:
+- Display tag cloud or category list on website
+- Build tag-based navigation
+- Get post counts for each tag
+
+INCLUDE OPTIONS:
+- count.posts: Include number of posts per tag
+
+NOTE: Only returns public tags (not internal tags starting with #).
+For all tags including internal, use admin_browse_tags instead.
+
+RETURNS: Array of tags with metadata and optional post counts.`;
 
 /**
  * Executes the browse tags tool.

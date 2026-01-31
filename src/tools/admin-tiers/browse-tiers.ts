@@ -10,8 +10,21 @@ import type { AdminBrowseTiersInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_browse_tiers';
 
-export const TOOL_DESCRIPTION =
-  'Browse tiers from the Ghost Admin API. Returns all tiers with optional filtering, pagination, and related data. Tiers are membership levels that define access to content.';
+export const TOOL_DESCRIPTION = `Browse all membership tiers from Ghost Admin API.
+
+USE CASE:
+- List all membership tiers (free and paid)
+- Get tier IDs for admin_create_offer (required for offers)
+- Review pricing and benefits of existing tiers
+
+FILTER EXAMPLES:
+- type:paid (paid tiers only, for creating offers)
+- type:free (free tiers only)
+- active:true (active tiers only)
+
+NOTE: Tier IDs are required for creating offers (admin_create_offer).
+
+RETURNS: Array of tiers with pricing, benefits, and metadata.`;
 
 export async function executeAdminBrowseTiers(
   client: GhostClient,

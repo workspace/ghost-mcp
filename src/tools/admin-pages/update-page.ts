@@ -10,8 +10,22 @@ import type { AdminUpdatePageInput } from './schemas.js';
 
 export const TOOL_NAME = 'admin_update_page';
 
-export const TOOL_DESCRIPTION =
-  'Update an existing page via the Ghost Admin API. Requires the page ID and the current updated_at timestamp for conflict prevention. Returns the updated page.';
+export const TOOL_DESCRIPTION = `Update an existing page via Ghost Admin API.
+
+USE CASE:
+- Edit page content, title, or metadata
+- Publish a draft page (change status to 'published')
+- Update SEO settings or feature image
+
+PREREQUISITE: Call admin_read_page first to get the current updated_at timestamp.
+
+WORKFLOW:
+1. admin_read_page(id: "page-id") -> get updated_at value
+2. admin_update_page(id: "page-id", updated_at: "...", title: "New Title")
+
+NOTE: Providing tags array REPLACES all existing tag assignments.
+
+RETURNS: Updated page with new updated_at timestamp.`;
 
 export async function executeAdminUpdatePage(
   client: GhostClient,
