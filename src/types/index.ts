@@ -15,3 +15,26 @@ export type {
   JwtGenerationOptions,
   ParsedApiKey,
 } from './auth.js';
+
+export type {
+  GhostClientConfig,
+  GhostRequestOptions,
+  GhostApiErrorResponse,
+  GhostApiErrorDetail,
+  GhostApiResponse,
+  GhostApiMeta,
+  GhostPagination,
+  GhostPost,
+  GhostPage,
+  GhostTag,
+  GhostAuthor,
+  GhostRole,
+  GhostMember,
+  GhostLabel,
+  GhostTier,
+  GhostNewsletter,
+  GhostSite,
+  GhostWebhook,
+  GhostImage,
+  GhostOffer,
+} from './ghost-api.js';
