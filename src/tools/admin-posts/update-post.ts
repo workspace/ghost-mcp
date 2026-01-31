@@ -45,5 +45,6 @@ export async function executeAdminUpdatePost(
 
   return client.put<AdminPostsResponse>(`/posts/${id}/`, {
     body: { posts: [post] },
+    params: input.html !== undefined ? { source: 'html' } : undefined,
   });
 }

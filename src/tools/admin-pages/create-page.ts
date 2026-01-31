@@ -42,5 +42,6 @@ export async function executeAdminCreatePage(
 
   return client.post<AdminPagesResponse>('/pages/', {
     body: { pages: [page] },
+    params: input.html !== undefined ? { source: 'html' } : undefined,
   });
 }

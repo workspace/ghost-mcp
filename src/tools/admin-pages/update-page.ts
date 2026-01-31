@@ -44,5 +44,6 @@ export async function executeAdminUpdatePage(
 
   return client.put<AdminPagesResponse>(`/pages/${id}/`, {
     body: { pages: [page] },
+    params: input.html !== undefined ? { source: 'html' } : undefined,
   });
 }
