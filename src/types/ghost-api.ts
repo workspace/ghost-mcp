@@ -509,3 +509,11 @@ export interface AdminTagsResponse {
   tags: GhostTag[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Admin API members endpoints.
+ */
+export interface AdminMembersResponse {
+  members: GhostMember[];
+  meta?: GhostApiMeta;
+}

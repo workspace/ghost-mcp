@@ -124,6 +124,24 @@ import {
   ADMIN_DELETE_TAG_TOOL_NAME,
   ADMIN_DELETE_TAG_TOOL_DESCRIPTION,
 } from './admin-tags/index.js';
+import {
+  executeAdminBrowseMembers,
+  executeAdminReadMember,
+  executeAdminCreateMember,
+  executeAdminUpdateMember,
+  AdminBrowseMembersInputSchema,
+  AdminReadMemberInputSchema,
+  AdminCreateMemberInputSchema,
+  AdminUpdateMemberInputSchema,
+  ADMIN_BROWSE_MEMBERS_TOOL_NAME,
+  ADMIN_BROWSE_MEMBERS_TOOL_DESCRIPTION,
+  ADMIN_READ_MEMBER_TOOL_NAME,
+  ADMIN_READ_MEMBER_TOOL_DESCRIPTION,
+  ADMIN_CREATE_MEMBER_TOOL_NAME,
+  ADMIN_CREATE_MEMBER_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_MEMBER_TOOL_NAME,
+  ADMIN_UPDATE_MEMBER_TOOL_DESCRIPTION,
+} from './admin-members/index.js';
 
 /**
  * Configuration for Content API.
@@ -1675,6 +1693,275 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_browse_members tool
+  server.tool(
+    ADMIN_BROWSE_MEMBERS_TOOL_NAME,
+    ADMIN_BROWSE_MEMBERS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe(
+          'Related data to include: labels, newsletters (comma-separated)'
+        ),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      filter: z
+        .string()
+        .optional()
+        .describe(
+          'NQL filter expression (e.g., status:paid, subscribed:true, label:vip)'
+        ),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of members to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., created_at DESC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseMembersInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseMembers(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_member tool
+  server.tool(
+    ADMIN_READ_MEMBER_TOOL_NAME,
+    ADMIN_READ_MEMBER_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Member ID'),
+      email: z.string().optional().describe('Member email address'),
+      include: z
+        .string()
+        .optional()
+        .describe(
+          'Related data to include: labels, newsletters (comma-separated)'
+        ),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadMemberInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadMember(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_member tool
+  server.tool(
+    ADMIN_CREATE_MEMBER_TOOL_NAME,
+    ADMIN_CREATE_MEMBER_TOOL_DESCRIPTION,
+    {
+      email: z.string().describe('Member email address (required)'),
+      name: z.string().optional().describe('Member name'),
+      note: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Private note about the member'),
+      subscribed: z
+        .boolean()
+        .optional()
+        .describe('Whether member is subscribed to newsletters (default: true)'),
+      labels: z
+        .array(
+          z.object({
+            id: z.string().optional(),
+            name: z.string().optional(),
+            slug: z.string().optional(),
+          })
+        )
+        .optional()
+        .describe('Labels to assign to the member'),
+      newsletters: z
+        .array(z.object({ id: z.string() }))
+        .optional()
+        .describe('Newsletters to subscribe the member to'),
+      comped: z
+        .boolean()
+        .optional()
+        .describe('Whether member has complimentary premium access'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateMemberInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateMember(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_member tool
+  server.tool(
+    ADMIN_UPDATE_MEMBER_TOOL_NAME,
+    ADMIN_UPDATE_MEMBER_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Member ID (required)'),
+      updated_at: z
+        .string()
+        .describe(
+          'Current updated_at timestamp for conflict prevention (required)'
+        ),
+      name: z.string().optional().describe('Member name'),
+      note: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Private note about the member'),
+      subscribed: z
+        .boolean()
+        .optional()
+        .describe('Whether member is subscribed to newsletters'),
+      labels: z
+        .array(
+          z.object({
+            id: z.string().optional(),
+            name: z.string().optional(),
+            slug: z.string().optional(),
+          })
+        )
+        .optional()
+        .describe('Labels to assign (replaces existing labels)'),
+      newsletters: z
+        .array(z.object({ id: z.string() }))
+        .optional()
+        .describe('Newsletters to subscribe to (replaces existing subscriptions)'),
+      comped: z
+        .boolean()
+        .optional()
+        .describe('Whether member has complimentary premium access'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateMemberInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateMember(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -1703,3 +1990,4 @@ export * from './content-authors/index.js';
 export * from './admin-posts/index.js';
 export * from './admin-pages/index.js';
 export * from './admin-tags/index.js';
+export * from './admin-members/index.js';
