@@ -51,6 +51,16 @@ export interface GhostRequestOptions {
 }
 
 /**
+ * Options for form data uploads.
+ */
+export interface FormDataUploadOptions {
+  /**
+   * Request timeout in milliseconds.
+   */
+  timeout?: number;
+}
+
+/**
  * Ghost API error response structure.
  */
 export interface GhostApiErrorResponse {
@@ -625,4 +635,11 @@ export interface AdminSiteResponse {
  */
 export interface AdminSettingsResponse {
   settings: GhostSettings;
+}
+
+/**
+ * Response from Admin API images upload endpoint.
+ */
+export interface AdminImagesResponse {
+  images: GhostImage[];
 }

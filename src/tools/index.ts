@@ -232,6 +232,12 @@ import {
   ADMIN_READ_SETTINGS_TOOL_NAME,
   ADMIN_READ_SETTINGS_TOOL_DESCRIPTION,
 } from './admin-settings/index.js';
+import {
+  executeAdminUploadImage,
+  AdminUploadImageInputSchema,
+  ADMIN_UPLOAD_IMAGE_TOOL_NAME,
+  ADMIN_UPLOAD_IMAGE_TOOL_DESCRIPTION,
+} from './admin-images/index.js';
 
 /**
  * Configuration for Content API.
@@ -3252,6 +3258,71 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_upload_image tool
+  server.tool(
+    ADMIN_UPLOAD_IMAGE_TOOL_NAME,
+    ADMIN_UPLOAD_IMAGE_TOOL_DESCRIPTION,
+    {
+      file_path: z
+        .string()
+        .describe('Path to the image file on the local filesystem'),
+      purpose: z
+        .enum(['image', 'profile_image', 'icon'])
+        .optional()
+        .describe('Purpose of the image: image (default), profile_image, or icon'),
+      ref: z
+        .string()
+        .optional()
+        .describe('Optional reference identifier returned in response'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUploadImageInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUploadImage(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Handle file system errors
+        if (error instanceof Error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -3289,3 +3360,4 @@ export * from './admin-roles/index.js';
 export * from './admin-invites/index.js';
 export * from './admin-site/index.js';
 export * from './admin-settings/index.js';
+export * from './admin-images/index.js';

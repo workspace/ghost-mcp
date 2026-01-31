@@ -9,6 +9,7 @@ import type {
   GhostClientConfig,
   GhostRequestOptions,
   GhostApiErrorResponse,
+  FormDataUploadOptions,
 } from '../types/ghost-api.js';
 import { GhostApiError } from './errors.js';
 
@@ -272,6 +273,72 @@ export class GhostClient {
     options?: Omit<GhostRequestOptions, 'method' | 'body'>
   ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+  }
+
+  /**
+   * Uploads form data to the Ghost API (for file uploads).
+   *
+   * Unlike the standard request method, this sends multipart/form-data
+   * instead of JSON.
+   *
+   * @param endpoint - API endpoint path (e.g., '/images/upload/')
+   * @param formData - FormData object containing files and fields
+   * @param options - Request options
+   * @returns Parsed JSON response
+   * @throws GhostApiError on API errors
+   */
+  async uploadFormData<T>(
+    endpoint: string,
+    formData: FormData,
+    options: FormDataUploadOptions = {}
+  ): Promise<T> {
+    const { timeout = DEFAULT_TIMEOUT_MS } = options;
+
+    const url = this.buildUrl(endpoint);
+
+    // Create headers without Content-Type (fetch will set it automatically with boundary)
+    const headers = new Headers();
+    headers.set('Authorization', createAuthorizationHeader(this.apiKey));
+    headers.set('Accept-Version', this.version);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+      return data as T;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof GhostApiError) {
+        throw error;
+      }
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw GhostApiError.timeoutError(timeout);
+      }
+
+      if (error instanceof Error) {
+        throw GhostApiError.networkError(error);
+      }
+
+      throw new GhostApiError('An unknown error occurred', 0, [
+        { message: String(error), type: 'UnknownError' },
+      ]);
+    }
   }
 
   /**
