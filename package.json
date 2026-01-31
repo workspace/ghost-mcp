@@ -36,15 +36,15 @@
     "claude",
     "anthropic"
   ],
-  "author": "",
+  "author": "workspace",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ryukimin/ghost-mcp.git"
+    "url": "git+https://github.com/workspace/ghost-mcp.git"
   },
-  "homepage": "https://github.com/ryukimin/ghost-mcp#readme",
+  "homepage": "https://github.com/workspace/ghost-mcp#readme",
   "bugs": {
-    "url": "https://github.com/ryukimin/ghost-mcp/issues"
+    "url": "https://github.com/workspace/ghost-mcp/issues"
   },
   "engines": {
     "node": ">=18.0.0"
