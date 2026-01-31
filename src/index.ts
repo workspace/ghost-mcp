@@ -62,11 +62,14 @@ async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-// Export for testing
+// Export for testing and for use by other entry points (e.g., sse.ts)
 export { createServer, SERVER_NAME, SERVER_VERSION };
 
-// Run the server
-main().catch((error: unknown) => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
+// Run the server only when executed directly (not when imported as a module)
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+  main().catch((error: unknown) => {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  });
+}

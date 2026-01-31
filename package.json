@@ -8,6 +8,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "start:sse": "node dist/sse.js",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -24,16 +25,20 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^25.1.0",
+    "@types/supertest": "^6.0.3",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.1",
+    "supertest": "^7.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1",
     "zod": "^4.3.6"
   }
 }
