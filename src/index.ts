@@ -6,6 +6,7 @@
  * It initializes the server with stdio transport for local development.
  */
 
+import { realpathSync } from 'fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { ServerInfo, GhostMcpCapabilities } from './types/index.js';
@@ -134,7 +135,9 @@ export {
 export type { ToolRegistrationConfig } from './tools/index.js';
 
 // Run the server only when executed directly (not when imported as a module)
-const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+// Use realpathSync to resolve symlinks (npm creates symlinks for bin entries)
+const resolvedArgv = realpathSync(process.argv[1]);
+const isMainModule = import.meta.url === `file://${resolvedArgv}`;
 if (isMainModule) {
   main().catch((error: unknown) => {
     console.error('Failed to start server:', error);
