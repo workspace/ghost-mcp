@@ -56,6 +56,18 @@ function getToolConfig(): ToolRegistrationConfig {
     };
   }
 
+  // Admin API configuration
+  const adminUrl = process.env.GHOST_URL;
+  const adminKey = process.env.GHOST_ADMIN_API_KEY;
+
+  if (adminUrl && adminKey) {
+    config.adminApi = {
+      url: adminUrl,
+      key: adminKey,
+      version: process.env.GHOST_API_VERSION,
+    };
+  }
+
   return config;
 }
 

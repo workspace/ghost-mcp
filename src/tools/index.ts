@@ -49,11 +49,47 @@ import {
   READ_AUTHOR_TOOL_NAME,
   READ_AUTHOR_TOOL_DESCRIPTION,
 } from './content-authors/index.js';
+import { GhostClient } from '../client/ghost-client.js';
+import {
+  executeAdminBrowsePosts,
+  executeAdminReadPost,
+  executeAdminCreatePost,
+  executeAdminUpdatePost,
+  executeAdminDeletePost,
+  executeAdminCopyPost,
+  AdminBrowsePostsInputSchema,
+  AdminReadPostInputSchema,
+  AdminCreatePostInputSchema,
+  AdminUpdatePostInputSchema,
+  AdminDeletePostInputSchema,
+  AdminCopyPostInputSchema,
+  ADMIN_BROWSE_POSTS_TOOL_NAME,
+  ADMIN_BROWSE_POSTS_TOOL_DESCRIPTION,
+  ADMIN_READ_POST_TOOL_NAME,
+  ADMIN_READ_POST_TOOL_DESCRIPTION,
+  ADMIN_CREATE_POST_TOOL_NAME,
+  ADMIN_CREATE_POST_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_POST_TOOL_NAME,
+  ADMIN_UPDATE_POST_TOOL_DESCRIPTION,
+  ADMIN_DELETE_POST_TOOL_NAME,
+  ADMIN_DELETE_POST_TOOL_DESCRIPTION,
+  ADMIN_COPY_POST_TOOL_NAME,
+  ADMIN_COPY_POST_TOOL_DESCRIPTION,
+} from './admin-posts/index.js';
 
 /**
  * Configuration for Content API.
  */
 export interface ContentApiConfig {
+  url: string;
+  key: string;
+  version?: string;
+}
+
+/**
+ * Configuration for Admin API.
+ */
+export interface AdminApiConfig {
   url: string;
   key: string;
   version?: string;
@@ -67,6 +103,11 @@ export interface ToolRegistrationConfig {
    * Ghost Content API configuration.
    */
   contentApi?: ContentApiConfig;
+
+  /**
+   * Ghost Admin API configuration.
+   */
+  adminApi?: AdminApiConfig;
 }
 
 /**
@@ -590,6 +631,384 @@ export function registerContentApiTools(
 }
 
 /**
+ * Registers all Admin API tools with the MCP server.
+ *
+ * @param server - MCP server instance
+ * @param config - Admin API configuration
+ */
+export function registerAdminApiTools(
+  server: McpServer,
+  config: AdminApiConfig
+): void {
+  // Create a lazy client getter to avoid creating the client until needed
+  let client: GhostClient | null = null;
+  const getClient = (): GhostClient => {
+    if (!client) {
+      client = new GhostClient({
+        url: config.url,
+        apiKey: config.key,
+        version: config.version,
+      });
+    }
+    return client;
+  };
+
+  // Register admin_browse_posts tool
+  server.tool(
+    ADMIN_BROWSE_POSTS_TOOL_NAME,
+    ADMIN_BROWSE_POSTS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: tags, authors (comma-separated)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      formats: z
+        .string()
+        .optional()
+        .describe('Content formats: html, lexical (comma-separated)'),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., status:draft)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of posts to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., published_at DESC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowsePostsInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowsePosts(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_post tool
+  server.tool(
+    ADMIN_READ_POST_TOOL_NAME,
+    ADMIN_READ_POST_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Post ID'),
+      slug: z.string().optional().describe('Post slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: tags, authors (comma-separated)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      formats: z
+        .string()
+        .optional()
+        .describe('Content formats: html, lexical (comma-separated)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadPostInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadPost(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_post tool
+  server.tool(
+    ADMIN_CREATE_POST_TOOL_NAME,
+    ADMIN_CREATE_POST_TOOL_DESCRIPTION,
+    {
+      title: z.string().describe('Post title (required)'),
+      slug: z.string().optional().describe('URL slug'),
+      lexical: z.string().optional().describe('Post content in Lexical JSON format'),
+      mobiledoc: z.string().optional().describe('Post content in Mobiledoc JSON format'),
+      html: z.string().optional().describe('Post content in HTML format'),
+      feature_image: z.string().nullable().optional().describe('Feature image URL'),
+      featured: z.boolean().optional().describe('Whether the post is featured'),
+      status: z
+        .enum(['published', 'draft', 'scheduled', 'sent'])
+        .optional()
+        .describe('Publication status (default: draft)'),
+      visibility: z
+        .enum(['public', 'members', 'paid', 'tiers'])
+        .optional()
+        .describe('Content visibility'),
+      tags: z.array(z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Tags to assign'),
+      authors: z.array(z.object({
+        id: z.string().optional(),
+        email: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Authors to assign'),
+      custom_excerpt: z.string().nullable().optional().describe('Custom excerpt'),
+      canonical_url: z.string().nullable().optional().describe('Canonical URL'),
+      meta_title: z.string().nullable().optional().describe('SEO meta title'),
+      meta_description: z.string().nullable().optional().describe('SEO meta description'),
+      og_image: z.string().nullable().optional().describe('Open Graph image URL'),
+      og_title: z.string().nullable().optional().describe('Open Graph title'),
+      og_description: z.string().nullable().optional().describe('Open Graph description'),
+      twitter_image: z.string().nullable().optional().describe('Twitter card image URL'),
+      twitter_title: z.string().nullable().optional().describe('Twitter card title'),
+      twitter_description: z.string().nullable().optional().describe('Twitter card description'),
+      codeinjection_head: z.string().nullable().optional().describe('Code for <head>'),
+      codeinjection_foot: z.string().nullable().optional().describe('Code for </body>'),
+      email_only: z.boolean().optional().describe('Email-only post'),
+      published_at: z.string().nullable().optional().describe('Publication date (ISO 8601)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreatePostInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreatePost(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_post tool
+  server.tool(
+    ADMIN_UPDATE_POST_TOOL_NAME,
+    ADMIN_UPDATE_POST_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Post ID (required)'),
+      updated_at: z.string().describe('Current updated_at timestamp (required for conflict prevention)'),
+      title: z.string().optional().describe('Post title'),
+      slug: z.string().optional().describe('URL slug'),
+      lexical: z.string().optional().describe('Post content in Lexical JSON format'),
+      mobiledoc: z.string().optional().describe('Post content in Mobiledoc JSON format'),
+      html: z.string().optional().describe('Post content in HTML format'),
+      feature_image: z.string().nullable().optional().describe('Feature image URL'),
+      featured: z.boolean().optional().describe('Whether the post is featured'),
+      status: z
+        .enum(['published', 'draft', 'scheduled', 'sent'])
+        .optional()
+        .describe('Publication status'),
+      visibility: z
+        .enum(['public', 'members', 'paid', 'tiers'])
+        .optional()
+        .describe('Content visibility'),
+      tags: z.array(z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Tags to assign (replaces existing)'),
+      authors: z.array(z.object({
+        id: z.string().optional(),
+        email: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Authors to assign (replaces existing)'),
+      custom_excerpt: z.string().nullable().optional().describe('Custom excerpt'),
+      canonical_url: z.string().nullable().optional().describe('Canonical URL'),
+      meta_title: z.string().nullable().optional().describe('SEO meta title'),
+      meta_description: z.string().nullable().optional().describe('SEO meta description'),
+      og_image: z.string().nullable().optional().describe('Open Graph image URL'),
+      og_title: z.string().nullable().optional().describe('Open Graph title'),
+      og_description: z.string().nullable().optional().describe('Open Graph description'),
+      twitter_image: z.string().nullable().optional().describe('Twitter card image URL'),
+      twitter_title: z.string().nullable().optional().describe('Twitter card title'),
+      twitter_description: z.string().nullable().optional().describe('Twitter card description'),
+      codeinjection_head: z.string().nullable().optional().describe('Code for <head>'),
+      codeinjection_foot: z.string().nullable().optional().describe('Code for </body>'),
+      email_only: z.boolean().optional().describe('Email-only post'),
+      published_at: z.string().nullable().optional().describe('Publication date (ISO 8601)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdatePostInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdatePost(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_delete_post tool
+  server.tool(
+    ADMIN_DELETE_POST_TOOL_NAME,
+    ADMIN_DELETE_POST_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Post ID to delete (required)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminDeletePostInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminDeletePost(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_copy_post tool
+  server.tool(
+    ADMIN_COPY_POST_TOOL_NAME,
+    ADMIN_COPY_POST_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Post ID to copy (required)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCopyPostInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCopyPost(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+}
+
+/**
  * Registers all tools with the MCP server.
  *
  * @param server - MCP server instance
@@ -602,6 +1021,9 @@ export function registerAllTools(
   if (config.contentApi) {
     registerContentApiTools(server, config.contentApi);
   }
+  if (config.adminApi) {
+    registerAdminApiTools(server, config.adminApi);
+  }
 }
 
 // Re-export individual tool modules
@@ -609,3 +1031,4 @@ export * from './content-posts/index.js';
 export * from './content-pages/index.js';
 export * from './content-tags/index.js';
 export * from './content-authors/index.js';
+export * from './admin-posts/index.js';

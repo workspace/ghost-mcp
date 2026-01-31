@@ -481,3 +481,15 @@ export interface ContentAuthorsResponse {
   authors: GhostAuthor[];
   meta?: GhostApiMeta;
 }
+
+// =============================================================================
+// Admin API Types
+// =============================================================================
+
+/**
+ * Response from Admin API posts endpoints.
+ */
+export interface AdminPostsResponse {
+  posts: GhostPost[];
+  meta?: GhostApiMeta;
+}
