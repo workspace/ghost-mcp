@@ -1,23 +1,23 @@
 /**
- * Tests for Ghost Admin API Posts tools.
+ * Tests for Ghost Admin API Pages tools.
  */
 
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
-  AdminBrowsePostsInputSchema,
-  AdminReadPostInputSchema,
-  AdminCreatePostInputSchema,
-  AdminUpdatePostInputSchema,
-  AdminDeletePostInputSchema,
-  AdminCopyPostInputSchema,
-} from './schemas.js';
-import { executeAdminBrowsePosts } from './browse-posts.js';
-import { executeAdminReadPost } from './read-post.js';
-import { executeAdminCreatePost } from './create-post.js';
-import { executeAdminUpdatePost } from './update-post.js';
-import { executeAdminDeletePost } from './delete-post.js';
-import { executeAdminCopyPost } from './copy-post.js';
+  AdminBrowsePagesInputSchema,
+  AdminReadPageInputSchema,
+  AdminCreatePageInputSchema,
+  AdminUpdatePageInputSchema,
+  AdminDeletePageInputSchema,
+  AdminCopyPageInputSchema,
+} from '../../../src/tools/admin-pages/schemas.js';
+import { executeAdminBrowsePages } from '../../../src/tools/admin-pages/browse-pages.js';
+import { executeAdminReadPage } from '../../../src/tools/admin-pages/read-page.js';
+import { executeAdminCreatePage } from '../../../src/tools/admin-pages/create-page.js';
+import { executeAdminUpdatePage } from '../../../src/tools/admin-pages/update-page.js';
+import { executeAdminDeletePage } from '../../../src/tools/admin-pages/delete-page.js';
+import { executeAdminCopyPage } from '../../../src/tools/admin-pages/copy-page.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =
@@ -64,14 +64,14 @@ afterEach(() => {
 // Schema Tests
 // =============================================================================
 
-describe('AdminBrowsePostsInputSchema', () => {
+describe('AdminBrowsePagesInputSchema', () => {
   it('should accept empty object (all optional)', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({});
+    const result = AdminBrowsePagesInputSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it('should accept include parameter', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({
+    const result = AdminBrowsePagesInputSchema.safeParse({
       include: 'tags,authors',
     });
     expect(result.success).toBe(true);
@@ -81,7 +81,7 @@ describe('AdminBrowsePostsInputSchema', () => {
   });
 
   it('should accept filter for drafts', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({
+    const result = AdminBrowsePagesInputSchema.safeParse({
       filter: 'status:draft',
     });
     expect(result.success).toBe(true);
@@ -91,7 +91,7 @@ describe('AdminBrowsePostsInputSchema', () => {
   });
 
   it('should accept formats parameter', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({
+    const result = AdminBrowsePagesInputSchema.safeParse({
       formats: 'html,lexical',
     });
     expect(result.success).toBe(true);
@@ -101,7 +101,7 @@ describe('AdminBrowsePostsInputSchema', () => {
   });
 
   it('should accept numeric limit', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({ limit: 10 });
+    const result = AdminBrowsePagesInputSchema.safeParse({ limit: 10 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe(10);
@@ -109,7 +109,7 @@ describe('AdminBrowsePostsInputSchema', () => {
   });
 
   it('should accept "all" as limit', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({ limit: 'all' });
+    const result = AdminBrowsePagesInputSchema.safeParse({ limit: 'all' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe('all');
@@ -117,7 +117,7 @@ describe('AdminBrowsePostsInputSchema', () => {
   });
 
   it('should accept page parameter', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({ page: 2 });
+    const result = AdminBrowsePagesInputSchema.safeParse({ page: 2 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.page).toBe(2);
@@ -125,29 +125,29 @@ describe('AdminBrowsePostsInputSchema', () => {
   });
 
   it('should accept order parameter', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({
-      order: 'published_at DESC',
+    const result = AdminBrowsePagesInputSchema.safeParse({
+      order: 'title ASC',
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.order).toBe('published_at DESC');
+      expect(result.data.order).toBe('title ASC');
     }
   });
 
   it('should reject invalid limit (negative)', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({ limit: -1 });
+    const result = AdminBrowsePagesInputSchema.safeParse({ limit: -1 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid page (zero)', () => {
-    const result = AdminBrowsePostsInputSchema.safeParse({ page: 0 });
+    const result = AdminBrowsePagesInputSchema.safeParse({ page: 0 });
     expect(result.success).toBe(false);
   });
 });
 
-describe('AdminReadPostInputSchema', () => {
+describe('AdminReadPageInputSchema', () => {
   it('should accept id parameter', () => {
-    const result = AdminReadPostInputSchema.safeParse({ id: '123' });
+    const result = AdminReadPageInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe('123');
@@ -155,15 +155,15 @@ describe('AdminReadPostInputSchema', () => {
   });
 
   it('should accept slug parameter', () => {
-    const result = AdminReadPostInputSchema.safeParse({ slug: 'my-post' });
+    const result = AdminReadPageInputSchema.safeParse({ slug: 'my-page' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.slug).toBe('my-post');
+      expect(result.data.slug).toBe('my-page');
     }
   });
 
   it('should reject if neither id nor slug provided', () => {
-    const result = AdminReadPostInputSchema.safeParse({});
+    const result = AdminReadPageInputSchema.safeParse({});
     expect(result.success).toBe(false);
     if (!result.success) {
       const errorMessage = result.error.message || JSON.stringify(result.error);
@@ -172,9 +172,9 @@ describe('AdminReadPostInputSchema', () => {
   });
 
   it('should reject if both id and slug provided', () => {
-    const result = AdminReadPostInputSchema.safeParse({
+    const result = AdminReadPageInputSchema.safeParse({
       id: '123',
-      slug: 'my-post',
+      slug: 'my-page',
     });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -186,7 +186,7 @@ describe('AdminReadPostInputSchema', () => {
   });
 
   it('should accept include parameter with id', () => {
-    const result = AdminReadPostInputSchema.safeParse({
+    const result = AdminReadPageInputSchema.safeParse({
       id: '123',
       include: 'tags,authors',
     });
@@ -197,7 +197,7 @@ describe('AdminReadPostInputSchema', () => {
   });
 
   it('should accept formats parameter', () => {
-    const result = AdminReadPostInputSchema.safeParse({
+    const result = AdminReadPageInputSchema.safeParse({
       id: '123',
       formats: 'html,lexical',
     });
@@ -208,33 +208,33 @@ describe('AdminReadPostInputSchema', () => {
   });
 });
 
-describe('AdminCreatePostInputSchema', () => {
+describe('AdminCreatePageInputSchema', () => {
   it('should require title', () => {
-    const result = AdminCreatePostInputSchema.safeParse({});
+    const result = AdminCreatePageInputSchema.safeParse({});
     expect(result.success).toBe(false);
   });
 
   it('should accept title only', () => {
-    const result = AdminCreatePostInputSchema.safeParse({ title: 'My Post' });
+    const result = AdminCreatePageInputSchema.safeParse({ title: 'My Page' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.title).toBe('My Post');
+      expect(result.data.title).toBe('My Page');
     }
   });
 
-  it('should accept full post data', () => {
-    const result = AdminCreatePostInputSchema.safeParse({
-      title: 'My Post',
-      slug: 'my-post',
+  it('should accept full page data', () => {
+    const result = AdminCreatePageInputSchema.safeParse({
+      title: 'My Page',
+      slug: 'my-page',
       status: 'draft',
       visibility: 'public',
       featured: true,
-      tags: [{ name: 'News' }],
+      tags: [{ name: 'Info' }],
       authors: [{ email: 'author@example.com' }],
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.title).toBe('My Post');
+      expect(result.data.title).toBe('My Page');
       expect(result.data.status).toBe('draft');
       expect(result.data.tags).toHaveLength(1);
       expect(result.data.authors).toHaveLength(1);
@@ -242,9 +242,9 @@ describe('AdminCreatePostInputSchema', () => {
   });
 
   it('should accept valid status values', () => {
-    const statuses = ['published', 'draft', 'scheduled', 'sent'] as const;
+    const statuses = ['published', 'draft', 'scheduled'] as const;
     for (const status of statuses) {
-      const result = AdminCreatePostInputSchema.safeParse({
+      const result = AdminCreatePageInputSchema.safeParse({
         title: 'Test',
         status,
       });
@@ -253,9 +253,17 @@ describe('AdminCreatePostInputSchema', () => {
   });
 
   it('should reject invalid status', () => {
-    const result = AdminCreatePostInputSchema.safeParse({
+    const result = AdminCreatePageInputSchema.safeParse({
       title: 'Test',
       status: 'invalid',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject sent status (pages do not support sent)', () => {
+    const result = AdminCreatePageInputSchema.safeParse({
+      title: 'Test',
+      status: 'sent',
     });
     expect(result.success).toBe(false);
   });
@@ -263,7 +271,7 @@ describe('AdminCreatePostInputSchema', () => {
   it('should accept valid visibility values', () => {
     const visibilities = ['public', 'members', 'paid', 'tiers'] as const;
     for (const visibility of visibilities) {
-      const result = AdminCreatePostInputSchema.safeParse({
+      const result = AdminCreatePageInputSchema.safeParse({
         title: 'Test',
         visibility,
       });
@@ -272,7 +280,7 @@ describe('AdminCreatePostInputSchema', () => {
   });
 
   it('should accept nullable fields', () => {
-    const result = AdminCreatePostInputSchema.safeParse({
+    const result = AdminCreatePageInputSchema.safeParse({
       title: 'Test',
       feature_image: null,
       custom_excerpt: null,
@@ -286,14 +294,14 @@ describe('AdminCreatePostInputSchema', () => {
 
   it('should validate tag references', () => {
     // Tag with at least one identifier should pass
-    const validResult = AdminCreatePostInputSchema.safeParse({
+    const validResult = AdminCreatePageInputSchema.safeParse({
       title: 'Test',
       tags: [{ id: '123' }],
     });
     expect(validResult.success).toBe(true);
 
     // Tag with no identifiers should fail
-    const invalidResult = AdminCreatePostInputSchema.safeParse({
+    const invalidResult = AdminCreatePageInputSchema.safeParse({
       title: 'Test',
       tags: [{}],
     });
@@ -302,14 +310,14 @@ describe('AdminCreatePostInputSchema', () => {
 
   it('should validate author references', () => {
     // Author with at least one identifier should pass
-    const validResult = AdminCreatePostInputSchema.safeParse({
+    const validResult = AdminCreatePageInputSchema.safeParse({
       title: 'Test',
       authors: [{ email: 'test@example.com' }],
     });
     expect(validResult.success).toBe(true);
 
     // Author with no identifiers should fail
-    const invalidResult = AdminCreatePostInputSchema.safeParse({
+    const invalidResult = AdminCreatePageInputSchema.safeParse({
       title: 'Test',
       authors: [{}],
     });
@@ -317,14 +325,14 @@ describe('AdminCreatePostInputSchema', () => {
   });
 });
 
-describe('AdminUpdatePostInputSchema', () => {
+describe('AdminUpdatePageInputSchema', () => {
   it('should require id and updated_at', () => {
-    const result = AdminUpdatePostInputSchema.safeParse({ id: '123' });
+    const result = AdminUpdatePageInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(false);
   });
 
   it('should accept id and updated_at', () => {
-    const result = AdminUpdatePostInputSchema.safeParse({
+    const result = AdminUpdatePageInputSchema.safeParse({
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
     });
@@ -336,7 +344,7 @@ describe('AdminUpdatePostInputSchema', () => {
   });
 
   it('should accept all update fields', () => {
-    const result = AdminUpdatePostInputSchema.safeParse({
+    const result = AdminUpdatePageInputSchema.safeParse({
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
       title: 'Updated Title',
@@ -350,14 +358,14 @@ describe('AdminUpdatePostInputSchema', () => {
   });
 });
 
-describe('AdminDeletePostInputSchema', () => {
+describe('AdminDeletePageInputSchema', () => {
   it('should require id', () => {
-    const result = AdminDeletePostInputSchema.safeParse({});
+    const result = AdminDeletePageInputSchema.safeParse({});
     expect(result.success).toBe(false);
   });
 
   it('should accept id', () => {
-    const result = AdminDeletePostInputSchema.safeParse({ id: '123' });
+    const result = AdminDeletePageInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe('123');
@@ -365,14 +373,14 @@ describe('AdminDeletePostInputSchema', () => {
   });
 });
 
-describe('AdminCopyPostInputSchema', () => {
+describe('AdminCopyPageInputSchema', () => {
   it('should require id', () => {
-    const result = AdminCopyPostInputSchema.safeParse({});
+    const result = AdminCopyPageInputSchema.safeParse({});
     expect(result.success).toBe(false);
   });
 
   it('should accept id', () => {
-    const result = AdminCopyPostInputSchema.safeParse({ id: '123' });
+    const result = AdminCopyPageInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe('123');
@@ -384,18 +392,18 @@ describe('AdminCopyPostInputSchema', () => {
 // Execute Function Tests
 // =============================================================================
 
-describe('executeAdminBrowsePosts', () => {
+describe('executeAdminBrowsePages', () => {
   it('should call client.get with correct endpoint', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
-      expect(url).toContain('/ghost/api/admin/posts/');
+    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+      expect(url).toContain('/ghost/api/admin/pages/');
     });
 
-    await executeAdminBrowsePosts(client, {});
+    await executeAdminBrowsePages(client, {});
   });
 
   it('should pass filter parameter', async () => {
@@ -404,12 +412,12 @@ describe('executeAdminBrowsePosts', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('filter')).toBe('status:draft');
     });
 
-    await executeAdminBrowsePosts(client, { filter: 'status:draft' });
+    await executeAdminBrowsePages(client, { filter: 'status:draft' });
   });
 
   it('should pass include parameter', async () => {
@@ -418,12 +426,12 @@ describe('executeAdminBrowsePosts', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('include')).toBe('tags,authors');
     });
 
-    await executeAdminBrowsePosts(client, { include: 'tags,authors' });
+    await executeAdminBrowsePages(client, { include: 'tags,authors' });
   });
 
   it('should pass limit parameter', async () => {
@@ -432,22 +440,22 @@ describe('executeAdminBrowsePosts', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('limit')).toBe('10');
     });
 
-    await executeAdminBrowsePosts(client, { limit: 10 });
+    await executeAdminBrowsePages(client, { limit: 10 });
   });
 
-  it('should return posts response', async () => {
+  it('should return pages response', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
     const expectedResponse = {
-      posts: [{ id: '1', title: 'Test Post', slug: 'test-post', status: 'draft' }],
+      pages: [{ id: '1', title: 'Test Page', slug: 'test-page', status: 'draft' }],
       meta: {
         pagination: {
           page: 1,
@@ -462,10 +470,10 @@ describe('executeAdminBrowsePosts', () => {
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeAdminBrowsePosts(client, {});
-    expect(result.posts).toHaveLength(1);
-    expect(result.posts[0].title).toBe('Test Post');
-    expect(result.posts[0].status).toBe('draft');
+    const result = await executeAdminBrowsePages(client, {});
+    expect(result.pages).toHaveLength(1);
+    expect(result.pages[0].title).toBe('Test Page');
+    expect(result.pages[0].status).toBe('draft');
   });
 
   it('should throw GhostApiError on API failure', async () => {
@@ -479,24 +487,24 @@ describe('executeAdminBrowsePosts', () => {
       body: { errors: [{ message: 'Invalid token' }] },
     });
 
-    await expect(executeAdminBrowsePosts(client, {})).rejects.toThrow(
+    await expect(executeAdminBrowsePages(client, {})).rejects.toThrow(
       GhostApiError
     );
   });
 });
 
-describe('executeAdminReadPost', () => {
+describe('executeAdminReadPage', () => {
   it('should call client.get with id endpoint', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
-      expect(url).toContain('/posts/123/');
+    mockFetch({ status: 200, body: { pages: [{ id: '123' }] } }, (url) => {
+      expect(url).toContain('/pages/123/');
     });
 
-    await executeAdminReadPost(client, { id: '123' });
+    await executeAdminReadPage(client, { id: '123' });
   });
 
   it('should call client.get with slug endpoint', async () => {
@@ -505,11 +513,11 @@ describe('executeAdminReadPost', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ slug: 'my-post' }] } }, (url) => {
-      expect(url).toContain('/posts/slug/my-post/');
+    mockFetch({ status: 200, body: { pages: [{ slug: 'my-page' }] } }, (url) => {
+      expect(url).toContain('/pages/slug/my-page/');
     });
 
-    await executeAdminReadPost(client, { slug: 'my-post' });
+    await executeAdminReadPage(client, { slug: 'my-page' });
   });
 
   it('should pass include parameter', async () => {
@@ -518,26 +526,26 @@ describe('executeAdminReadPost', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { pages: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('include')).toBe('tags,authors');
     });
 
-    await executeAdminReadPost(client, { id: '123', include: 'tags,authors' });
+    await executeAdminReadPage(client, { id: '123', include: 'tags,authors' });
   });
 
-  it('should return post response', async () => {
+  it('should return page response', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
     const expectedResponse = {
-      posts: [
+      pages: [
         {
           id: '123',
-          title: 'Test Post',
-          slug: 'test-post',
+          title: 'Test Page',
+          slug: 'test-page',
           status: 'draft',
         },
       ],
@@ -545,9 +553,9 @@ describe('executeAdminReadPost', () => {
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeAdminReadPost(client, { id: '123' });
-    expect(result.posts).toHaveLength(1);
-    expect(result.posts[0].title).toBe('Test Post');
+    const result = await executeAdminReadPage(client, { id: '123' });
+    expect(result.pages).toHaveLength(1);
+    expect(result.pages[0].title).toBe('Test Page');
   });
 
   it('should throw GhostApiError on 404', async () => {
@@ -558,16 +566,16 @@ describe('executeAdminReadPost', () => {
 
     mockFetch({
       status: 404,
-      body: { errors: [{ message: 'Post not found', type: 'NotFoundError' }] },
+      body: { errors: [{ message: 'Page not found', type: 'NotFoundError' }] },
     });
 
     await expect(
-      executeAdminReadPost(client, { id: 'nonexistent' })
+      executeAdminReadPage(client, { id: 'nonexistent' })
     ).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeAdminCreatePost', () => {
+describe('executeAdminCreatePage', () => {
   it('should POST with correct body structure', async () => {
     const client = new GhostClient({
       url: TEST_URL,
@@ -575,17 +583,17 @@ describe('executeAdminCreatePost', () => {
     });
 
     mockFetch(
-      { status: 201, body: { posts: [{ id: '1', title: 'Test' }] } },
+      { status: 201, body: { pages: [{ id: '1', title: 'Test' }] } },
       (url, options) => {
         expect(options?.method).toBe('POST');
-        expect(url).toContain('/posts/');
+        expect(url).toContain('/pages/');
         const body = JSON.parse(options?.body as string);
-        expect(body.posts).toHaveLength(1);
-        expect(body.posts[0].title).toBe('Test');
+        expect(body.pages).toHaveLength(1);
+        expect(body.pages[0].title).toBe('Test');
       }
     );
 
-    await executeAdminCreatePost(client, { title: 'Test' });
+    await executeAdminCreatePage(client, { title: 'Test' });
   });
 
   it('should include all provided fields', async () => {
@@ -595,23 +603,23 @@ describe('executeAdminCreatePost', () => {
     });
 
     mockFetch(
-      { status: 201, body: { posts: [{ id: '1', title: 'Test', status: 'published' }] } },
+      { status: 201, body: { pages: [{ id: '1', title: 'Test', status: 'published' }] } },
       (url, options) => {
         const body = JSON.parse(options?.body as string);
-        expect(body.posts[0].title).toBe('Test');
-        expect(body.posts[0].status).toBe('published');
-        expect(body.posts[0].featured).toBe(true);
+        expect(body.pages[0].title).toBe('Test');
+        expect(body.pages[0].status).toBe('published');
+        expect(body.pages[0].featured).toBe(true);
       }
     );
 
-    await executeAdminCreatePost(client, {
+    await executeAdminCreatePage(client, {
       title: 'Test',
       status: 'published',
       featured: true,
     });
   });
 
-  it('should return created post', async () => {
+  it('should return created page', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
@@ -620,7 +628,7 @@ describe('executeAdminCreatePost', () => {
     mockFetch({
       status: 201,
       body: {
-        posts: [
+        pages: [
           {
             id: '1',
             title: 'Test',
@@ -631,9 +639,9 @@ describe('executeAdminCreatePost', () => {
       },
     });
 
-    const result = await executeAdminCreatePost(client, { title: 'Test' });
-    expect(result.posts).toHaveLength(1);
-    expect(result.posts[0].id).toBe('1');
+    const result = await executeAdminCreatePage(client, { title: 'Test' });
+    expect(result.pages).toHaveLength(1);
+    expect(result.pages[0].id).toBe('1');
   });
 
   it('should throw GhostApiError on validation error', async () => {
@@ -648,12 +656,12 @@ describe('executeAdminCreatePost', () => {
     });
 
     await expect(
-      executeAdminCreatePost(client, { title: 'Test' })
+      executeAdminCreatePage(client, { title: 'Test' })
     ).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeAdminUpdatePost', () => {
+describe('executeAdminUpdatePage', () => {
   it('should PUT with correct body structure', async () => {
     const client = new GhostClient({
       url: TEST_URL,
@@ -661,17 +669,17 @@ describe('executeAdminUpdatePost', () => {
     });
 
     mockFetch(
-      { status: 200, body: { posts: [{ id: '123', title: 'Updated' }] } },
+      { status: 200, body: { pages: [{ id: '123', title: 'Updated' }] } },
       (url, options) => {
         expect(options?.method).toBe('PUT');
-        expect(url).toContain('/posts/123/');
+        expect(url).toContain('/pages/123/');
         const body = JSON.parse(options?.body as string);
-        expect(body.posts[0].updated_at).toBe('2024-01-15T10:00:00.000Z');
-        expect(body.posts[0].title).toBe('Updated');
+        expect(body.pages[0].updated_at).toBe('2024-01-15T10:00:00.000Z');
+        expect(body.pages[0].title).toBe('Updated');
       }
     );
 
-    await executeAdminUpdatePost(client, {
+    await executeAdminUpdatePage(client, {
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
       title: 'Updated',
@@ -685,21 +693,21 @@ describe('executeAdminUpdatePost', () => {
     });
 
     mockFetch(
-      { status: 200, body: { posts: [{ id: '123' }] } },
+      { status: 200, body: { pages: [{ id: '123' }] } },
       (url, options) => {
         const body = JSON.parse(options?.body as string);
         // id should not be in the body, only in the URL
-        expect(body.posts[0].id).toBeUndefined();
+        expect(body.pages[0].id).toBeUndefined();
       }
     );
 
-    await executeAdminUpdatePost(client, {
+    await executeAdminUpdatePage(client, {
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
     });
   });
 
-  it('should return updated post', async () => {
+  it('should return updated page', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
@@ -708,7 +716,7 @@ describe('executeAdminUpdatePost', () => {
     mockFetch({
       status: 200,
       body: {
-        posts: [
+        pages: [
           {
             id: '123',
             title: 'Updated Title',
@@ -718,12 +726,12 @@ describe('executeAdminUpdatePost', () => {
       },
     });
 
-    const result = await executeAdminUpdatePost(client, {
+    const result = await executeAdminUpdatePage(client, {
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
       title: 'Updated Title',
     });
-    expect(result.posts[0].title).toBe('Updated Title');
+    expect(result.pages[0].title).toBe('Updated Title');
   });
 
   it('should throw GhostApiError on conflict', async () => {
@@ -738,7 +746,7 @@ describe('executeAdminUpdatePost', () => {
     });
 
     await expect(
-      executeAdminUpdatePost(client, {
+      executeAdminUpdatePage(client, {
         id: '123',
         updated_at: '2024-01-15T10:00:00.000Z',
       })
@@ -746,7 +754,7 @@ describe('executeAdminUpdatePost', () => {
   });
 });
 
-describe('executeAdminDeletePost', () => {
+describe('executeAdminDeletePage', () => {
   it('should DELETE correct endpoint', async () => {
     const client = new GhostClient({
       url: TEST_URL,
@@ -755,10 +763,10 @@ describe('executeAdminDeletePost', () => {
 
     mockFetch({ status: 204 }, (url, options) => {
       expect(options?.method).toBe('DELETE');
-      expect(url).toContain('/posts/123/');
+      expect(url).toContain('/pages/123/');
     });
 
-    await executeAdminDeletePost(client, { id: '123' });
+    await executeAdminDeletePage(client, { id: '123' });
   });
 
   it('should return success response', async () => {
@@ -769,7 +777,7 @@ describe('executeAdminDeletePost', () => {
 
     mockFetch({ status: 204 });
 
-    const result = await executeAdminDeletePost(client, { id: '123' });
+    const result = await executeAdminDeletePage(client, { id: '123' });
     expect(result.success).toBe(true);
   });
 
@@ -781,16 +789,16 @@ describe('executeAdminDeletePost', () => {
 
     mockFetch({
       status: 404,
-      body: { errors: [{ message: 'Post not found' }] },
+      body: { errors: [{ message: 'Page not found' }] },
     });
 
     await expect(
-      executeAdminDeletePost(client, { id: 'nonexistent' })
+      executeAdminDeletePage(client, { id: 'nonexistent' })
     ).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeAdminCopyPost', () => {
+describe('executeAdminCopyPage', () => {
   it('should POST to copy endpoint', async () => {
     const client = new GhostClient({
       url: TEST_URL,
@@ -798,17 +806,17 @@ describe('executeAdminCopyPost', () => {
     });
 
     mockFetch(
-      { status: 201, body: { posts: [{ id: '456', title: 'Test (Copy)' }] } },
+      { status: 201, body: { pages: [{ id: '456', title: 'Test (Copy)' }] } },
       (url, options) => {
         expect(options?.method).toBe('POST');
-        expect(url).toContain('/posts/123/copy/');
+        expect(url).toContain('/pages/123/copy/');
       }
     );
 
-    await executeAdminCopyPost(client, { id: '123' });
+    await executeAdminCopyPage(client, { id: '123' });
   });
 
-  it('should return copied post', async () => {
+  it('should return copied page', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
@@ -817,7 +825,7 @@ describe('executeAdminCopyPost', () => {
     mockFetch({
       status: 201,
       body: {
-        posts: [
+        pages: [
           {
             id: '456',
             title: 'Original Title (Copy)',
@@ -828,11 +836,11 @@ describe('executeAdminCopyPost', () => {
       },
     });
 
-    const result = await executeAdminCopyPost(client, { id: '123' });
-    expect(result.posts).toHaveLength(1);
-    expect(result.posts[0].id).toBe('456');
-    expect(result.posts[0].title).toBe('Original Title (Copy)');
-    expect(result.posts[0].status).toBe('draft');
+    const result = await executeAdminCopyPage(client, { id: '123' });
+    expect(result.pages).toHaveLength(1);
+    expect(result.pages[0].id).toBe('456');
+    expect(result.pages[0].title).toBe('Original Title (Copy)');
+    expect(result.pages[0].status).toBe('draft');
   });
 
   it('should throw GhostApiError on 404', async () => {
@@ -843,11 +851,11 @@ describe('executeAdminCopyPost', () => {
 
     mockFetch({
       status: 404,
-      body: { errors: [{ message: 'Post not found' }] },
+      body: { errors: [{ message: 'Page not found' }] },
     });
 
     await expect(
-      executeAdminCopyPost(client, { id: 'nonexistent' })
+      executeAdminCopyPage(client, { id: 'nonexistent' })
     ).rejects.toThrow(GhostApiError);
   });
 });

@@ -2,16 +2,16 @@
  * Tests for Ghost Admin API Offers tools.
  */
 
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
   AdminBrowseOffersInputSchema,
   AdminCreateOfferInputSchema,
   AdminUpdateOfferInputSchema,
-} from './schemas.js';
-import { executeAdminBrowseOffers } from './browse-offers.js';
-import { executeAdminCreateOffer } from './create-offer.js';
-import { executeAdminUpdateOffer } from './update-offer.js';
+} from '../../../src/tools/admin-offers/schemas.js';
+import { executeAdminBrowseOffers } from '../../../src/tools/admin-offers/browse-offers.js';
+import { executeAdminCreateOffer } from '../../../src/tools/admin-offers/create-offer.js';
+import { executeAdminUpdateOffer } from '../../../src/tools/admin-offers/update-offer.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =

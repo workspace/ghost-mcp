@@ -2,16 +2,16 @@
  * Tests for Ghost Admin API Webhooks tools.
  */
 
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
   AdminCreateWebhookInputSchema,
   AdminUpdateWebhookInputSchema,
   AdminDeleteWebhookInputSchema,
-} from './schemas.js';
-import { executeAdminCreateWebhook } from './create-webhook.js';
-import { executeAdminUpdateWebhook } from './update-webhook.js';
-import { executeAdminDeleteWebhook } from './delete-webhook.js';
+} from '../../../src/tools/admin-webhooks/schemas.js';
+import { executeAdminCreateWebhook } from '../../../src/tools/admin-webhooks/create-webhook.js';
+import { executeAdminUpdateWebhook } from '../../../src/tools/admin-webhooks/update-webhook.js';
+import { executeAdminDeleteWebhook } from '../../../src/tools/admin-webhooks/delete-webhook.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =

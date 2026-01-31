@@ -2,18 +2,18 @@
  * Tests for Ghost Admin API Newsletters tools.
  */
 
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
   AdminBrowseNewslettersInputSchema,
   AdminReadNewsletterInputSchema,
   AdminCreateNewsletterInputSchema,
   AdminUpdateNewsletterInputSchema,
-} from './schemas.js';
-import { executeAdminBrowseNewsletters } from './browse-newsletters.js';
-import { executeAdminReadNewsletter } from './read-newsletter.js';
-import { executeAdminCreateNewsletter } from './create-newsletter.js';
-import { executeAdminUpdateNewsletter } from './update-newsletter.js';
+} from '../../../src/tools/admin-newsletters/schemas.js';
+import { executeAdminBrowseNewsletters } from '../../../src/tools/admin-newsletters/browse-newsletters.js';
+import { executeAdminReadNewsletter } from '../../../src/tools/admin-newsletters/read-newsletter.js';
+import { executeAdminCreateNewsletter } from '../../../src/tools/admin-newsletters/create-newsletter.js';
+import { executeAdminUpdateNewsletter } from '../../../src/tools/admin-newsletters/update-newsletter.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =

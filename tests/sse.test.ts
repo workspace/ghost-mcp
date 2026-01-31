@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { createApp, DEFAULT_PORT } from './sse.js';
+import { createApp, DEFAULT_PORT } from '../src/sse.js';
 
 describe('ghost-mcp SSE transport', () => {
   describe('configuration', () => {

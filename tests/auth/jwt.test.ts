@@ -9,7 +9,7 @@ import {
   generateToken,
   createAuthorizationHeader,
   GhostAuthError,
-} from './jwt.js';
+} from '../../src/auth/jwt.js';
 
 // Test API key - this is a valid format example, not a real key
 // The secret is a hex-encoded string (64 hex chars = 32 bytes)

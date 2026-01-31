@@ -1,21 +1,19 @@
 /**
- * Tests for Ghost Admin API Tags tools.
+ * Tests for Ghost Admin API Tiers tools.
  */
 
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
-  AdminBrowseTagsInputSchema,
-  AdminReadTagInputSchema,
-  AdminCreateTagInputSchema,
-  AdminUpdateTagInputSchema,
-  AdminDeleteTagInputSchema,
-} from './schemas.js';
-import { executeAdminBrowseTags } from './browse-tags.js';
-import { executeAdminReadTag } from './read-tag.js';
-import { executeAdminCreateTag } from './create-tag.js';
-import { executeAdminUpdateTag } from './update-tag.js';
-import { executeAdminDeleteTag } from './delete-tag.js';
+  AdminBrowseTiersInputSchema,
+  AdminReadTierInputSchema,
+  AdminCreateTierInputSchema,
+  AdminUpdateTierInputSchema,
+} from '../../../src/tools/admin-tiers/schemas.js';
+import { executeAdminBrowseTiers } from '../../../src/tools/admin-tiers/browse-tiers.js';
+import { executeAdminReadTier } from '../../../src/tools/admin-tiers/read-tier.js';
+import { executeAdminCreateTier } from '../../../src/tools/admin-tiers/create-tier.js';
+import { executeAdminUpdateTier } from '../../../src/tools/admin-tiers/update-tier.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =
@@ -62,24 +60,34 @@ afterEach(() => {
 // Schema Tests
 // =============================================================================
 
-describe('AdminBrowseTagsInputSchema', () => {
+describe('AdminBrowseTiersInputSchema', () => {
   it('should accept empty object (all optional)', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({});
+    const result = AdminBrowseTiersInputSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it('should accept include parameter', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({
-      include: 'count.posts',
+    const result = AdminBrowseTiersInputSchema.safeParse({
+      include: 'monthly_price,yearly_price,benefits',
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.include).toBe('count.posts');
+      expect(result.data.include).toBe('monthly_price,yearly_price,benefits');
+    }
+  });
+
+  it('should accept filter for type', () => {
+    const result = AdminBrowseTiersInputSchema.safeParse({
+      filter: 'type:paid',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.filter).toBe('type:paid');
     }
   });
 
   it('should accept filter for visibility', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({
+    const result = AdminBrowseTiersInputSchema.safeParse({
       filter: 'visibility:public',
     });
     expect(result.success).toBe(true);
@@ -88,8 +96,18 @@ describe('AdminBrowseTagsInputSchema', () => {
     }
   });
 
+  it('should accept filter for active', () => {
+    const result = AdminBrowseTiersInputSchema.safeParse({
+      filter: 'active:true',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.filter).toBe('active:true');
+    }
+  });
+
   it('should accept numeric limit', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({ limit: 10 });
+    const result = AdminBrowseTiersInputSchema.safeParse({ limit: 10 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe(10);
@@ -97,7 +115,7 @@ describe('AdminBrowseTagsInputSchema', () => {
   });
 
   it('should accept "all" as limit', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({ limit: 'all' });
+    const result = AdminBrowseTiersInputSchema.safeParse({ limit: 'all' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe('all');
@@ -105,7 +123,7 @@ describe('AdminBrowseTagsInputSchema', () => {
   });
 
   it('should accept page parameter', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({ page: 2 });
+    const result = AdminBrowseTiersInputSchema.safeParse({ page: 2 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.page).toBe(2);
@@ -113,7 +131,7 @@ describe('AdminBrowseTagsInputSchema', () => {
   });
 
   it('should accept order parameter', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({
+    const result = AdminBrowseTiersInputSchema.safeParse({
       order: 'name ASC',
     });
     expect(result.success).toBe(true);
@@ -123,19 +141,19 @@ describe('AdminBrowseTagsInputSchema', () => {
   });
 
   it('should reject invalid limit (negative)', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({ limit: -1 });
+    const result = AdminBrowseTiersInputSchema.safeParse({ limit: -1 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid page (zero)', () => {
-    const result = AdminBrowseTagsInputSchema.safeParse({ page: 0 });
+    const result = AdminBrowseTiersInputSchema.safeParse({ page: 0 });
     expect(result.success).toBe(false);
   });
 });
 
-describe('AdminReadTagInputSchema', () => {
+describe('AdminReadTierInputSchema', () => {
   it('should accept id parameter', () => {
-    const result = AdminReadTagInputSchema.safeParse({ id: '123' });
+    const result = AdminReadTierInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe('123');
@@ -143,15 +161,15 @@ describe('AdminReadTagInputSchema', () => {
   });
 
   it('should accept slug parameter', () => {
-    const result = AdminReadTagInputSchema.safeParse({ slug: 'my-tag' });
+    const result = AdminReadTierInputSchema.safeParse({ slug: 'premium' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.slug).toBe('my-tag');
+      expect(result.data.slug).toBe('premium');
     }
   });
 
   it('should reject if neither id nor slug provided', () => {
-    const result = AdminReadTagInputSchema.safeParse({});
+    const result = AdminReadTierInputSchema.safeParse({});
     expect(result.success).toBe(false);
     if (!result.success) {
       const errorMessage = result.error.message || JSON.stringify(result.error);
@@ -160,9 +178,9 @@ describe('AdminReadTagInputSchema', () => {
   });
 
   it('should reject if both id and slug provided', () => {
-    const result = AdminReadTagInputSchema.safeParse({
+    const result = AdminReadTierInputSchema.safeParse({
       id: '123',
-      slug: 'my-tag',
+      slug: 'premium',
     });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -174,51 +192,76 @@ describe('AdminReadTagInputSchema', () => {
   });
 
   it('should accept include parameter with id', () => {
-    const result = AdminReadTagInputSchema.safeParse({
+    const result = AdminReadTierInputSchema.safeParse({
       id: '123',
-      include: 'count.posts',
+      include: 'benefits',
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.include).toBe('count.posts');
+      expect(result.data.include).toBe('benefits');
     }
   });
 });
 
-describe('AdminCreateTagInputSchema', () => {
+describe('AdminCreateTierInputSchema', () => {
   it('should require name', () => {
-    const result = AdminCreateTagInputSchema.safeParse({});
+    const result = AdminCreateTierInputSchema.safeParse({});
     expect(result.success).toBe(false);
   });
 
   it('should accept name only', () => {
-    const result = AdminCreateTagInputSchema.safeParse({ name: 'My Tag' });
+    const result = AdminCreateTierInputSchema.safeParse({ name: 'Premium' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.name).toBe('My Tag');
+      expect(result.data.name).toBe('Premium');
     }
   });
 
-  it('should accept full tag data', () => {
-    const result = AdminCreateTagInputSchema.safeParse({
-      name: 'My Tag',
-      slug: 'my-tag',
-      description: 'A test tag',
+  it('should accept full tier data', () => {
+    const result = AdminCreateTierInputSchema.safeParse({
+      name: 'Premium',
+      slug: 'premium',
+      description: 'Premium membership tier',
+      type: 'paid',
       visibility: 'public',
-      accent_color: '#ff0000',
+      monthly_price: 999,
+      yearly_price: 9999,
+      currency: 'usd',
+      benefits: ['Benefit 1', 'Benefit 2'],
+      trial_days: 14,
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.name).toBe('My Tag');
-      expect(result.data.visibility).toBe('public');
-      expect(result.data.accent_color).toBe('#ff0000');
+      expect(result.data.name).toBe('Premium');
+      expect(result.data.type).toBe('paid');
+      expect(result.data.monthly_price).toBe(999);
+      expect(result.data.benefits).toEqual(['Benefit 1', 'Benefit 2']);
     }
   });
 
+  it('should accept valid type values', () => {
+    const types = ['free', 'paid'] as const;
+    for (const type of types) {
+      const result = AdminCreateTierInputSchema.safeParse({
+        name: 'Test',
+        type,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('should reject invalid type', () => {
+    const result = AdminCreateTierInputSchema.safeParse({
+      name: 'Test',
+      type: 'invalid',
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('should accept valid visibility values', () => {
-    const visibilities = ['public', 'internal'] as const;
+    const visibilities = ['public', 'none'] as const;
     for (const visibility of visibilities) {
-      const result = AdminCreateTagInputSchema.safeParse({
+      const result = AdminCreateTierInputSchema.safeParse({
         name: 'Test',
         visibility,
       });
@@ -227,7 +270,7 @@ describe('AdminCreateTagInputSchema', () => {
   });
 
   it('should reject invalid visibility', () => {
-    const result = AdminCreateTagInputSchema.safeParse({
+    const result = AdminCreateTierInputSchema.safeParse({
       name: 'Test',
       visibility: 'invalid',
     });
@@ -235,44 +278,58 @@ describe('AdminCreateTagInputSchema', () => {
   });
 
   it('should accept nullable fields', () => {
-    const result = AdminCreateTagInputSchema.safeParse({
+    const result = AdminCreateTierInputSchema.safeParse({
       name: 'Test',
       description: null,
-      feature_image: null,
-      canonical_url: null,
+      welcome_page_url: null,
+      monthly_price: null,
+      yearly_price: null,
+      currency: null,
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.description).toBeNull();
+      expect(result.data.monthly_price).toBeNull();
     }
   });
 
-  it('should accept SEO fields', () => {
-    const result = AdminCreateTagInputSchema.safeParse({
+  it('should accept benefits array', () => {
+    const result = AdminCreateTierInputSchema.safeParse({
       name: 'Test',
-      meta_title: 'SEO Title',
-      meta_description: 'SEO Description',
-      og_title: 'OG Title',
-      og_description: 'OG Description',
-      twitter_title: 'Twitter Title',
-      twitter_description: 'Twitter Description',
+      benefits: ['Access to all posts', 'Early access', 'Exclusive content'],
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.meta_title).toBe('SEO Title');
-      expect(result.data.og_title).toBe('OG Title');
+      expect(result.data.benefits).toHaveLength(3);
+      expect(result.data.benefits?.[0]).toBe('Access to all posts');
     }
+  });
+
+  it('should reject negative prices', () => {
+    const result = AdminCreateTierInputSchema.safeParse({
+      name: 'Test',
+      monthly_price: -100,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject negative trial_days', () => {
+    const result = AdminCreateTierInputSchema.safeParse({
+      name: 'Test',
+      trial_days: -5,
+    });
+    expect(result.success).toBe(false);
   });
 });
 
-describe('AdminUpdateTagInputSchema', () => {
+describe('AdminUpdateTierInputSchema', () => {
   it('should require id and updated_at', () => {
-    const result = AdminUpdateTagInputSchema.safeParse({ id: '123' });
+    const result = AdminUpdateTierInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(false);
   });
 
   it('should accept id and updated_at', () => {
-    const result = AdminUpdateTagInputSchema.safeParse({
+    const result = AdminUpdateTierInputSchema.safeParse({
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
     });
@@ -284,32 +341,19 @@ describe('AdminUpdateTagInputSchema', () => {
   });
 
   it('should accept all update fields', () => {
-    const result = AdminUpdateTagInputSchema.safeParse({
+    const result = AdminUpdateTierInputSchema.safeParse({
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
-      name: 'Updated Tag',
-      visibility: 'internal',
-      accent_color: '#00ff00',
+      name: 'Updated Tier',
+      visibility: 'none',
+      monthly_price: 1299,
+      benefits: ['New benefit'],
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.name).toBe('Updated Tag');
-      expect(result.data.visibility).toBe('internal');
-    }
-  });
-});
-
-describe('AdminDeleteTagInputSchema', () => {
-  it('should require id', () => {
-    const result = AdminDeleteTagInputSchema.safeParse({});
-    expect(result.success).toBe(false);
-  });
-
-  it('should accept id', () => {
-    const result = AdminDeleteTagInputSchema.safeParse({ id: '123' });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.id).toBe('123');
+      expect(result.data.name).toBe('Updated Tier');
+      expect(result.data.visibility).toBe('none');
+      expect(result.data.monthly_price).toBe(1299);
     }
   });
 });
@@ -318,18 +362,18 @@ describe('AdminDeleteTagInputSchema', () => {
 // Execute Function Tests
 // =============================================================================
 
-describe('executeAdminBrowseTags', () => {
+describe('executeAdminBrowseTiers', () => {
   it('should call client.get with correct endpoint', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
-      expect(url).toContain('/ghost/api/admin/tags/');
+    mockFetch({ status: 200, body: { tiers: [], meta: {} } }, (url) => {
+      expect(url).toContain('/ghost/api/admin/tiers/');
     });
 
-    await executeAdminBrowseTags(client, {});
+    await executeAdminBrowseTiers(client, {});
   });
 
   it('should pass filter parameter', async () => {
@@ -338,12 +382,12 @@ describe('executeAdminBrowseTags', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tiers: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('filter')).toBe('visibility:public');
+      expect(parsed.searchParams.get('filter')).toBe('type:paid');
     });
 
-    await executeAdminBrowseTags(client, { filter: 'visibility:public' });
+    await executeAdminBrowseTiers(client, { filter: 'type:paid' });
   });
 
   it('should pass include parameter', async () => {
@@ -352,12 +396,12 @@ describe('executeAdminBrowseTags', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tiers: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('include')).toBe('count.posts');
+      expect(parsed.searchParams.get('include')).toBe('benefits');
     });
 
-    await executeAdminBrowseTags(client, { include: 'count.posts' });
+    await executeAdminBrowseTiers(client, { include: 'benefits' });
   });
 
   it('should pass limit parameter', async () => {
@@ -366,22 +410,31 @@ describe('executeAdminBrowseTags', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tiers: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('limit')).toBe('10');
     });
 
-    await executeAdminBrowseTags(client, { limit: 10 });
+    await executeAdminBrowseTiers(client, { limit: 10 });
   });
 
-  it('should return tags response', async () => {
+  it('should return tiers response', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
     const expectedResponse = {
-      tags: [{ id: '1', name: 'Test Tag', slug: 'test-tag', visibility: 'public' }],
+      tiers: [
+        {
+          id: '1',
+          name: 'Premium',
+          slug: 'premium',
+          type: 'paid',
+          visibility: 'public',
+          active: true,
+        },
+      ],
       meta: {
         pagination: {
           page: 1,
@@ -396,10 +449,10 @@ describe('executeAdminBrowseTags', () => {
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeAdminBrowseTags(client, {});
-    expect(result.tags).toHaveLength(1);
-    expect(result.tags[0].name).toBe('Test Tag');
-    expect(result.tags[0].visibility).toBe('public');
+    const result = await executeAdminBrowseTiers(client, {});
+    expect(result.tiers).toHaveLength(1);
+    expect(result.tiers[0].name).toBe('Premium');
+    expect(result.tiers[0].type).toBe('paid');
   });
 
   it('should throw GhostApiError on API failure', async () => {
@@ -413,24 +466,24 @@ describe('executeAdminBrowseTags', () => {
       body: { errors: [{ message: 'Invalid token' }] },
     });
 
-    await expect(executeAdminBrowseTags(client, {})).rejects.toThrow(
+    await expect(executeAdminBrowseTiers(client, {})).rejects.toThrow(
       GhostApiError
     );
   });
 });
 
-describe('executeAdminReadTag', () => {
+describe('executeAdminReadTier', () => {
   it('should call client.get with id endpoint', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [{ id: '123' }] } }, (url) => {
-      expect(url).toContain('/tags/123/');
+    mockFetch({ status: 200, body: { tiers: [{ id: '123' }] } }, (url) => {
+      expect(url).toContain('/tiers/123/');
     });
 
-    await executeAdminReadTag(client, { id: '123' });
+    await executeAdminReadTier(client, { id: '123' });
   });
 
   it('should call client.get with slug endpoint', async () => {
@@ -439,11 +492,11 @@ describe('executeAdminReadTag', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [{ slug: 'my-tag' }] } }, (url) => {
-      expect(url).toContain('/tags/slug/my-tag/');
+    mockFetch({ status: 200, body: { tiers: [{ slug: 'premium' }] } }, (url) => {
+      expect(url).toContain('/tiers/slug/premium/');
     });
 
-    await executeAdminReadTag(client, { slug: 'my-tag' });
+    await executeAdminReadTier(client, { slug: 'premium' });
   });
 
   it('should pass include parameter', async () => {
@@ -452,36 +505,42 @@ describe('executeAdminReadTag', () => {
       apiKey: TEST_ADMIN_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { tags: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { tiers: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('include')).toBe('count.posts');
+      expect(parsed.searchParams.get('include')).toBe('benefits');
     });
 
-    await executeAdminReadTag(client, { id: '123', include: 'count.posts' });
+    await executeAdminReadTier(client, { id: '123', include: 'benefits' });
   });
 
-  it('should return tag response', async () => {
+  it('should return tier response', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
     });
 
     const expectedResponse = {
-      tags: [
+      tiers: [
         {
           id: '123',
-          name: 'Test Tag',
-          slug: 'test-tag',
+          name: 'Premium',
+          slug: 'premium',
+          type: 'paid',
           visibility: 'public',
+          monthly_price: 999,
+          yearly_price: 9999,
+          currency: 'usd',
+          benefits: ['Benefit 1', 'Benefit 2'],
         },
       ],
     };
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeAdminReadTag(client, { id: '123' });
-    expect(result.tags).toHaveLength(1);
-    expect(result.tags[0].name).toBe('Test Tag');
+    const result = await executeAdminReadTier(client, { id: '123' });
+    expect(result.tiers).toHaveLength(1);
+    expect(result.tiers[0].name).toBe('Premium');
+    expect(result.tiers[0].benefits).toHaveLength(2);
   });
 
   it('should throw GhostApiError on 404', async () => {
@@ -492,16 +551,16 @@ describe('executeAdminReadTag', () => {
 
     mockFetch({
       status: 404,
-      body: { errors: [{ message: 'Tag not found', type: 'NotFoundError' }] },
+      body: { errors: [{ message: 'Tier not found', type: 'NotFoundError' }] },
     });
 
     await expect(
-      executeAdminReadTag(client, { id: 'nonexistent' })
+      executeAdminReadTier(client, { id: 'nonexistent' })
     ).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeAdminCreateTag', () => {
+describe('executeAdminCreateTier', () => {
   it('should POST with correct body structure', async () => {
     const client = new GhostClient({
       url: TEST_URL,
@@ -509,17 +568,17 @@ describe('executeAdminCreateTag', () => {
     });
 
     mockFetch(
-      { status: 201, body: { tags: [{ id: '1', name: 'Test' }] } },
+      { status: 201, body: { tiers: [{ id: '1', name: 'Premium' }] } },
       (url, options) => {
         expect(options?.method).toBe('POST');
-        expect(url).toContain('/tags/');
+        expect(url).toContain('/tiers/');
         const body = JSON.parse(options?.body as string);
-        expect(body.tags).toHaveLength(1);
-        expect(body.tags[0].name).toBe('Test');
+        expect(body.tiers).toHaveLength(1);
+        expect(body.tiers[0].name).toBe('Premium');
       }
     );
 
-    await executeAdminCreateTag(client, { name: 'Test' });
+    await executeAdminCreateTier(client, { name: 'Premium' });
   });
 
   it('should include all provided fields', async () => {
@@ -529,23 +588,30 @@ describe('executeAdminCreateTag', () => {
     });
 
     mockFetch(
-      { status: 201, body: { tags: [{ id: '1', name: 'Test', visibility: 'internal' }] } },
+      {
+        status: 201,
+        body: { tiers: [{ id: '1', name: 'Premium', type: 'paid' }] },
+      },
       (url, options) => {
         const body = JSON.parse(options?.body as string);
-        expect(body.tags[0].name).toBe('Test');
-        expect(body.tags[0].visibility).toBe('internal');
-        expect(body.tags[0].accent_color).toBe('#ff0000');
+        expect(body.tiers[0].name).toBe('Premium');
+        expect(body.tiers[0].type).toBe('paid');
+        expect(body.tiers[0].monthly_price).toBe(999);
+        expect(body.tiers[0].currency).toBe('usd');
+        expect(body.tiers[0].benefits).toEqual(['Benefit 1']);
       }
     );
 
-    await executeAdminCreateTag(client, {
-      name: 'Test',
-      visibility: 'internal',
-      accent_color: '#ff0000',
+    await executeAdminCreateTier(client, {
+      name: 'Premium',
+      type: 'paid',
+      monthly_price: 999,
+      currency: 'usd',
+      benefits: ['Benefit 1'],
     });
   });
 
-  it('should return created tag', async () => {
+  it('should return created tier', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
@@ -554,20 +620,21 @@ describe('executeAdminCreateTag', () => {
     mockFetch({
       status: 201,
       body: {
-        tags: [
+        tiers: [
           {
             id: '1',
-            name: 'Test',
-            slug: 'test',
+            name: 'Premium',
+            slug: 'premium',
+            type: 'paid',
             visibility: 'public',
           },
         ],
       },
     });
 
-    const result = await executeAdminCreateTag(client, { name: 'Test' });
-    expect(result.tags).toHaveLength(1);
-    expect(result.tags[0].id).toBe('1');
+    const result = await executeAdminCreateTier(client, { name: 'Premium' });
+    expect(result.tiers).toHaveLength(1);
+    expect(result.tiers[0].id).toBe('1');
   });
 
   it('should throw GhostApiError on validation error', async () => {
@@ -582,12 +649,12 @@ describe('executeAdminCreateTag', () => {
     });
 
     await expect(
-      executeAdminCreateTag(client, { name: 'Test' })
+      executeAdminCreateTier(client, { name: 'Test' })
     ).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeAdminUpdateTag', () => {
+describe('executeAdminUpdateTier', () => {
   it('should PUT with correct body structure', async () => {
     const client = new GhostClient({
       url: TEST_URL,
@@ -595,17 +662,17 @@ describe('executeAdminUpdateTag', () => {
     });
 
     mockFetch(
-      { status: 200, body: { tags: [{ id: '123', name: 'Updated' }] } },
+      { status: 200, body: { tiers: [{ id: '123', name: 'Updated' }] } },
       (url, options) => {
         expect(options?.method).toBe('PUT');
-        expect(url).toContain('/tags/123/');
+        expect(url).toContain('/tiers/123/');
         const body = JSON.parse(options?.body as string);
-        expect(body.tags[0].updated_at).toBe('2024-01-15T10:00:00.000Z');
-        expect(body.tags[0].name).toBe('Updated');
+        expect(body.tiers[0].updated_at).toBe('2024-01-15T10:00:00.000Z');
+        expect(body.tiers[0].name).toBe('Updated');
       }
     );
 
-    await executeAdminUpdateTag(client, {
+    await executeAdminUpdateTier(client, {
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
       name: 'Updated',
@@ -619,21 +686,21 @@ describe('executeAdminUpdateTag', () => {
     });
 
     mockFetch(
-      { status: 200, body: { tags: [{ id: '123' }] } },
+      { status: 200, body: { tiers: [{ id: '123' }] } },
       (url, options) => {
         const body = JSON.parse(options?.body as string);
         // id should not be in the body, only in the URL
-        expect(body.tags[0].id).toBeUndefined();
+        expect(body.tiers[0].id).toBeUndefined();
       }
     );
 
-    await executeAdminUpdateTag(client, {
+    await executeAdminUpdateTier(client, {
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
     });
   });
 
-  it('should return updated tag', async () => {
+  it('should return updated tier', async () => {
     const client = new GhostClient({
       url: TEST_URL,
       apiKey: TEST_ADMIN_API_KEY,
@@ -642,7 +709,7 @@ describe('executeAdminUpdateTag', () => {
     mockFetch({
       status: 200,
       body: {
-        tags: [
+        tiers: [
           {
             id: '123',
             name: 'Updated Name',
@@ -652,12 +719,12 @@ describe('executeAdminUpdateTag', () => {
       },
     });
 
-    const result = await executeAdminUpdateTag(client, {
+    const result = await executeAdminUpdateTier(client, {
       id: '123',
       updated_at: '2024-01-15T10:00:00.000Z',
       name: 'Updated Name',
     });
-    expect(result.tags[0].name).toBe('Updated Name');
+    expect(result.tiers[0].name).toBe('Updated Name');
   });
 
   it('should throw GhostApiError on conflict', async () => {
@@ -668,58 +735,16 @@ describe('executeAdminUpdateTag', () => {
 
     mockFetch({
       status: 409,
-      body: { errors: [{ message: 'Update conflict', type: 'UpdateCollisionError' }] },
+      body: {
+        errors: [{ message: 'Update conflict', type: 'UpdateCollisionError' }],
+      },
     });
 
     await expect(
-      executeAdminUpdateTag(client, {
+      executeAdminUpdateTier(client, {
         id: '123',
         updated_at: '2024-01-15T10:00:00.000Z',
       })
-    ).rejects.toThrow(GhostApiError);
-  });
-});
-
-describe('executeAdminDeleteTag', () => {
-  it('should DELETE correct endpoint', async () => {
-    const client = new GhostClient({
-      url: TEST_URL,
-      apiKey: TEST_ADMIN_API_KEY,
-    });
-
-    mockFetch({ status: 204 }, (url, options) => {
-      expect(options?.method).toBe('DELETE');
-      expect(url).toContain('/tags/123/');
-    });
-
-    await executeAdminDeleteTag(client, { id: '123' });
-  });
-
-  it('should return success response', async () => {
-    const client = new GhostClient({
-      url: TEST_URL,
-      apiKey: TEST_ADMIN_API_KEY,
-    });
-
-    mockFetch({ status: 204 });
-
-    const result = await executeAdminDeleteTag(client, { id: '123' });
-    expect(result.success).toBe(true);
-  });
-
-  it('should throw GhostApiError on 404', async () => {
-    const client = new GhostClient({
-      url: TEST_URL,
-      apiKey: TEST_ADMIN_API_KEY,
-    });
-
-    mockFetch({
-      status: 404,
-      body: { errors: [{ message: 'Tag not found' }] },
-    });
-
-    await expect(
-      executeAdminDeleteTag(client, { id: 'nonexistent' })
     ).rejects.toThrow(GhostApiError);
   });
 });

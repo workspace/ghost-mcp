@@ -1,15 +1,15 @@
 /**
- * Tests for Ghost Content API Pages tools.
+ * Tests for Ghost Content API Posts tools.
  */
 
-import { GhostContentClient } from '../../client/ghost-content-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostContentClient } from '../../../src/client/ghost-content-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
-  BrowsePagesInputSchema,
-  ReadPageInputSchema,
-} from './schemas.js';
-import { executeBrowsePages } from './browse-pages.js';
-import { executeReadPage } from './read-page.js';
+  BrowsePostsInputSchema,
+  ReadPostInputSchema,
+} from '../../../src/tools/content-posts/schemas.js';
+import { executeBrowsePosts } from '../../../src/tools/content-posts/browse-posts.js';
+import { executeReadPost } from '../../../src/tools/content-posts/read-post.js';
 
 // Test Content API key
 const TEST_CONTENT_API_KEY = '22444f78447824223cefc48062';
@@ -51,14 +51,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('BrowsePagesInputSchema', () => {
+describe('BrowsePostsInputSchema', () => {
   it('should accept empty object (all optional)', () => {
-    const result = BrowsePagesInputSchema.safeParse({});
+    const result = BrowsePostsInputSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it('should accept include parameter', () => {
-    const result = BrowsePagesInputSchema.safeParse({ include: 'tags,authors' });
+    const result = BrowsePostsInputSchema.safeParse({ include: 'tags,authors' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.include).toBe('tags,authors');
@@ -66,7 +66,7 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept fields parameter', () => {
-    const result = BrowsePagesInputSchema.safeParse({ fields: 'title,slug' });
+    const result = BrowsePostsInputSchema.safeParse({ fields: 'title,slug' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.fields).toBe('title,slug');
@@ -74,7 +74,7 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept formats parameter', () => {
-    const result = BrowsePagesInputSchema.safeParse({ formats: 'html,plaintext' });
+    const result = BrowsePostsInputSchema.safeParse({ formats: 'html,plaintext' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.formats).toBe('html,plaintext');
@@ -82,7 +82,7 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept filter parameter', () => {
-    const result = BrowsePagesInputSchema.safeParse({ filter: 'tag:getting-started' });
+    const result = BrowsePostsInputSchema.safeParse({ filter: 'tag:getting-started' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.filter).toBe('tag:getting-started');
@@ -90,7 +90,7 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept numeric limit', () => {
-    const result = BrowsePagesInputSchema.safeParse({ limit: 10 });
+    const result = BrowsePostsInputSchema.safeParse({ limit: 10 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe(10);
@@ -98,7 +98,7 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept "all" as limit', () => {
-    const result = BrowsePagesInputSchema.safeParse({ limit: 'all' });
+    const result = BrowsePostsInputSchema.safeParse({ limit: 'all' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe('all');
@@ -106,7 +106,7 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept page parameter', () => {
-    const result = BrowsePagesInputSchema.safeParse({ page: 2 });
+    const result = BrowsePostsInputSchema.safeParse({ page: 2 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.page).toBe(2);
@@ -114,10 +114,10 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should accept order parameter', () => {
-    const result = BrowsePagesInputSchema.safeParse({ order: 'title ASC' });
+    const result = BrowsePostsInputSchema.safeParse({ order: 'published_at DESC' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.order).toBe('title ASC');
+      expect(result.data.order).toBe('published_at DESC');
     }
   });
 
@@ -131,7 +131,7 @@ describe('BrowsePagesInputSchema', () => {
       page: 1,
       order: 'title ASC',
     };
-    const result = BrowsePagesInputSchema.safeParse(input);
+    const result = BrowsePostsInputSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual(input);
@@ -139,29 +139,29 @@ describe('BrowsePagesInputSchema', () => {
   });
 
   it('should reject invalid limit (negative)', () => {
-    const result = BrowsePagesInputSchema.safeParse({ limit: -1 });
+    const result = BrowsePostsInputSchema.safeParse({ limit: -1 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid limit (zero)', () => {
-    const result = BrowsePagesInputSchema.safeParse({ limit: 0 });
+    const result = BrowsePostsInputSchema.safeParse({ limit: 0 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid page (negative)', () => {
-    const result = BrowsePagesInputSchema.safeParse({ page: -1 });
+    const result = BrowsePostsInputSchema.safeParse({ page: -1 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid page (zero)', () => {
-    const result = BrowsePagesInputSchema.safeParse({ page: 0 });
+    const result = BrowsePostsInputSchema.safeParse({ page: 0 });
     expect(result.success).toBe(false);
   });
 });
 
-describe('ReadPageInputSchema', () => {
+describe('ReadPostInputSchema', () => {
   it('should accept id parameter', () => {
-    const result = ReadPageInputSchema.safeParse({ id: '123' });
+    const result = ReadPostInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe('123');
@@ -169,15 +169,15 @@ describe('ReadPageInputSchema', () => {
   });
 
   it('should accept slug parameter', () => {
-    const result = ReadPageInputSchema.safeParse({ slug: 'about' });
+    const result = ReadPostInputSchema.safeParse({ slug: 'my-post' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.slug).toBe('about');
+      expect(result.data.slug).toBe('my-post');
     }
   });
 
   it('should reject if neither id nor slug provided', () => {
-    const result = ReadPageInputSchema.safeParse({});
+    const result = ReadPostInputSchema.safeParse({});
     expect(result.success).toBe(false);
     if (!result.success) {
       // Check that the error message is present in the error
@@ -187,7 +187,7 @@ describe('ReadPageInputSchema', () => {
   });
 
   it('should reject if both id and slug provided', () => {
-    const result = ReadPageInputSchema.safeParse({ id: '123', slug: 'about' });
+    const result = ReadPostInputSchema.safeParse({ id: '123', slug: 'my-post' });
     expect(result.success).toBe(false);
     if (!result.success) {
       // Check that the error message is present in the error
@@ -197,7 +197,7 @@ describe('ReadPageInputSchema', () => {
   });
 
   it('should accept include parameter with id', () => {
-    const result = ReadPageInputSchema.safeParse({ id: '123', include: 'tags,authors' });
+    const result = ReadPostInputSchema.safeParse({ id: '123', include: 'tags,authors' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.include).toBe('tags,authors');
@@ -205,7 +205,7 @@ describe('ReadPageInputSchema', () => {
   });
 
   it('should accept fields parameter with slug', () => {
-    const result = ReadPageInputSchema.safeParse({ slug: 'about', fields: 'title,html' });
+    const result = ReadPostInputSchema.safeParse({ slug: 'my-post', fields: 'title,html' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.fields).toBe('title,html');
@@ -213,7 +213,7 @@ describe('ReadPageInputSchema', () => {
   });
 
   it('should accept formats parameter', () => {
-    const result = ReadPageInputSchema.safeParse({ id: '123', formats: 'html,plaintext' });
+    const result = ReadPostInputSchema.safeParse({ id: '123', formats: 'html,plaintext' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.formats).toBe('html,plaintext');
@@ -221,19 +221,19 @@ describe('ReadPageInputSchema', () => {
   });
 });
 
-describe('executeBrowsePages', () => {
+describe('executeBrowsePosts', () => {
   it('should call client.get with correct endpoint', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.pathname).toBe('/ghost/api/content/pages/');
+      expect(parsed.pathname).toBe('/ghost/api/content/posts/');
     });
 
-    await executeBrowsePages(client, {});
+    await executeBrowsePosts(client, {});
   });
 
   it('should pass include parameter', async () => {
@@ -242,12 +242,12 @@ describe('executeBrowsePages', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('include')).toBe('tags,authors');
     });
 
-    await executeBrowsePages(client, { include: 'tags,authors' });
+    await executeBrowsePosts(client, { include: 'tags,authors' });
   });
 
   it('should pass filter parameter', async () => {
@@ -256,12 +256,12 @@ describe('executeBrowsePages', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('filter')).toBe('tag:news');
     });
 
-    await executeBrowsePages(client, { filter: 'tag:news' });
+    await executeBrowsePosts(client, { filter: 'tag:news' });
   });
 
   it('should pass limit parameter', async () => {
@@ -270,12 +270,12 @@ describe('executeBrowsePages', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('limit')).toBe('10');
     });
 
-    await executeBrowsePages(client, { limit: 10 });
+    await executeBrowsePosts(client, { limit: 10 });
   });
 
   it('should pass "all" as limit', async () => {
@@ -284,12 +284,12 @@ describe('executeBrowsePages', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('limit')).toBe('all');
     });
 
-    await executeBrowsePages(client, { limit: 'all' });
+    await executeBrowsePosts(client, { limit: 'all' });
   });
 
   it('should pass page parameter', async () => {
@@ -298,36 +298,22 @@ describe('executeBrowsePages', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('page')).toBe('2');
     });
 
-    await executeBrowsePages(client, { page: 2 });
+    await executeBrowsePosts(client, { page: 2 });
   });
 
-  it('should pass order parameter', async () => {
-    const client = new GhostContentClient({
-      url: TEST_URL,
-      key: TEST_CONTENT_API_KEY,
-    });
-
-    mockFetch({ status: 200, body: { pages: [], meta: {} } }, (url) => {
-      const parsed = new URL(url);
-      expect(parsed.searchParams.get('order')).toBe('title ASC');
-    });
-
-    await executeBrowsePages(client, { order: 'title ASC' });
-  });
-
-  it('should return pages response', async () => {
+  it('should return posts response', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
     const expectedResponse = {
-      pages: [{ id: '1', title: 'About Us', slug: 'about' }],
+      posts: [{ id: '1', title: 'Test Post', slug: 'test-post' }],
       meta: {
         pagination: {
           page: 1,
@@ -342,9 +328,9 @@ describe('executeBrowsePages', () => {
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeBrowsePages(client, {});
-    expect(result.pages).toHaveLength(1);
-    expect(result.pages[0].title).toBe('About Us');
+    const result = await executeBrowsePosts(client, {});
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe('Test Post');
     expect(result.meta?.pagination?.total).toBe(1);
   });
 
@@ -359,23 +345,23 @@ describe('executeBrowsePages', () => {
       body: { errors: [{ message: 'Unknown Content API Key' }] },
     });
 
-    await expect(executeBrowsePages(client, {})).rejects.toThrow(GhostApiError);
+    await expect(executeBrowsePosts(client, {})).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeReadPage', () => {
+describe('executeReadPost', () => {
   it('should call client.get with id endpoint', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.pathname).toBe('/ghost/api/content/pages/123/');
+      expect(parsed.pathname).toBe('/ghost/api/content/posts/123/');
     });
 
-    await executeReadPage(client, { id: '123' });
+    await executeReadPost(client, { id: '123' });
   });
 
   it('should call client.get with slug endpoint', async () => {
@@ -384,12 +370,12 @@ describe('executeReadPage', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [{ slug: 'about' }] } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [{ slug: 'my-post' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.pathname).toBe('/ghost/api/content/pages/slug/about/');
+      expect(parsed.pathname).toBe('/ghost/api/content/posts/slug/my-post/');
     });
 
-    await executeReadPage(client, { slug: 'about' });
+    await executeReadPost(client, { slug: 'my-post' });
   });
 
   it('should pass include parameter', async () => {
@@ -398,12 +384,12 @@ describe('executeReadPage', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('include')).toBe('tags,authors');
     });
 
-    await executeReadPage(client, { id: '123', include: 'tags,authors' });
+    await executeReadPost(client, { id: '123', include: 'tags,authors' });
   });
 
   it('should pass fields parameter', async () => {
@@ -412,12 +398,12 @@ describe('executeReadPage', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('fields')).toBe('title,html');
     });
 
-    await executeReadPage(client, { id: '123', fields: 'title,html' });
+    await executeReadPost(client, { id: '123', fields: 'title,html' });
   });
 
   it('should pass formats parameter', async () => {
@@ -426,37 +412,37 @@ describe('executeReadPage', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { pages: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('formats')).toBe('html,plaintext');
     });
 
-    await executeReadPage(client, { id: '123', formats: 'html,plaintext' });
+    await executeReadPost(client, { id: '123', formats: 'html,plaintext' });
   });
 
-  it('should return page response', async () => {
+  it('should return post response', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
     const expectedResponse = {
-      pages: [
+      posts: [
         {
           id: '123',
-          title: 'About Us',
-          slug: 'about',
-          html: '<p>Welcome to our company</p>',
+          title: 'Test Post',
+          slug: 'test-post',
+          html: '<p>Hello</p>',
         },
       ],
     };
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeReadPage(client, { id: '123' });
-    expect(result.pages).toHaveLength(1);
-    expect(result.pages[0].title).toBe('About Us');
-    expect(result.pages[0].html).toBe('<p>Welcome to our company</p>');
+    const result = await executeReadPost(client, { id: '123' });
+    expect(result.posts).toHaveLength(1);
+    expect(result.posts[0].title).toBe('Test Post');
+    expect(result.posts[0].html).toBe('<p>Hello</p>');
   });
 
   it('should throw GhostApiError on 404', async () => {
@@ -467,10 +453,10 @@ describe('executeReadPage', () => {
 
     mockFetch({
       status: 404,
-      body: { errors: [{ message: 'Page not found', type: 'NotFoundError' }] },
+      body: { errors: [{ message: 'Post not found', type: 'NotFoundError' }] },
     });
 
-    await expect(executeReadPage(client, { id: 'nonexistent' })).rejects.toThrow(
+    await expect(executeReadPost(client, { id: 'nonexistent' })).rejects.toThrow(
       GhostApiError
     );
   });

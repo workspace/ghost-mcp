@@ -5,14 +5,14 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
   AdminUploadThemeInputSchema,
   AdminActivateThemeInputSchema,
-} from './schemas.js';
-import { executeAdminUploadTheme } from './upload-theme.js';
-import { executeAdminActivateTheme } from './activate-theme.js';
+} from '../../../src/tools/admin-themes/schemas.js';
+import { executeAdminUploadTheme } from '../../../src/tools/admin-themes/upload-theme.js';
+import { executeAdminActivateTheme } from '../../../src/tools/admin-themes/activate-theme.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =

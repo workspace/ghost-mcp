@@ -2,8 +2,8 @@
  * Tests for Ghost API HTTP client wrapper.
  */
 
-import { GhostClient } from './ghost-client.js';
-import { GhostApiError } from './errors.js';
+import { GhostClient } from '../../src/client/ghost-client.js';
+import { GhostApiError } from '../../src/client/errors.js';
 
 // Test API key (matches format from jwt.test.ts)
 const TEST_API_KEY_ID = '6489d0c3c3c3c3c3c3c3c3c3';

@@ -5,10 +5,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
-import { AdminUploadImageInputSchema } from './schemas.js';
-import { executeAdminUploadImage } from './upload-image.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
+import { AdminUploadImageInputSchema } from '../../../src/tools/admin-images/schemas.js';
+import { executeAdminUploadImage } from '../../../src/tools/admin-images/upload-image.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =

@@ -2,10 +2,10 @@
  * Tests for Ghost Admin API Site tools.
  */
 
-import { GhostClient } from '../../client/ghost-client.js';
-import { GhostApiError } from '../../client/errors.js';
-import { AdminReadSiteInputSchema } from './schemas.js';
-import { executeAdminReadSite } from './read-site.js';
+import { GhostClient } from '../../../src/client/ghost-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
+import { AdminReadSiteInputSchema } from '../../../src/tools/admin-site/schemas.js';
+import { executeAdminReadSite } from '../../../src/tools/admin-site/read-site.js';
 
 // Test Admin API key in "id:secret" format
 const TEST_ADMIN_API_KEY =

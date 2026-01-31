@@ -2,14 +2,14 @@
  * Tests for Ghost Content API Authors tools.
  */
 
-import { GhostContentClient } from '../../client/ghost-content-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostContentClient } from '../../../src/client/ghost-content-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
   BrowseAuthorsInputSchema,
   ReadAuthorInputSchema,
-} from './schemas.js';
-import { executeBrowseAuthors } from './browse-authors.js';
-import { executeReadAuthor } from './read-author.js';
+} from '../../../src/tools/content-authors/schemas.js';
+import { executeBrowseAuthors } from '../../../src/tools/content-authors/browse-authors.js';
+import { executeReadAuthor } from '../../../src/tools/content-authors/read-author.js';
 
 // Test Content API key
 const TEST_CONTENT_API_KEY = '22444f78447824223cefc48062';

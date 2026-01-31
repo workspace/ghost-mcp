@@ -1,15 +1,15 @@
 /**
- * Tests for Ghost Content API Posts tools.
+ * Tests for Ghost Content API Tags tools.
  */
 
-import { GhostContentClient } from '../../client/ghost-content-client.js';
-import { GhostApiError } from '../../client/errors.js';
+import { GhostContentClient } from '../../../src/client/ghost-content-client.js';
+import { GhostApiError } from '../../../src/client/errors.js';
 import {
-  BrowsePostsInputSchema,
-  ReadPostInputSchema,
-} from './schemas.js';
-import { executeBrowsePosts } from './browse-posts.js';
-import { executeReadPost } from './read-post.js';
+  BrowseTagsInputSchema,
+  ReadTagInputSchema,
+} from '../../../src/tools/content-tags/schemas.js';
+import { executeBrowseTags } from '../../../src/tools/content-tags/browse-tags.js';
+import { executeReadTag } from '../../../src/tools/content-tags/read-tag.js';
 
 // Test Content API key
 const TEST_CONTENT_API_KEY = '22444f78447824223cefc48062';
@@ -51,46 +51,38 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('BrowsePostsInputSchema', () => {
+describe('BrowseTagsInputSchema', () => {
   it('should accept empty object (all optional)', () => {
-    const result = BrowsePostsInputSchema.safeParse({});
+    const result = BrowseTagsInputSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it('should accept include parameter', () => {
-    const result = BrowsePostsInputSchema.safeParse({ include: 'tags,authors' });
+    const result = BrowseTagsInputSchema.safeParse({ include: 'count.posts' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.include).toBe('tags,authors');
+      expect(result.data.include).toBe('count.posts');
     }
   });
 
   it('should accept fields parameter', () => {
-    const result = BrowsePostsInputSchema.safeParse({ fields: 'title,slug' });
+    const result = BrowseTagsInputSchema.safeParse({ fields: 'name,slug' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.fields).toBe('title,slug');
-    }
-  });
-
-  it('should accept formats parameter', () => {
-    const result = BrowsePostsInputSchema.safeParse({ formats: 'html,plaintext' });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.formats).toBe('html,plaintext');
+      expect(result.data.fields).toBe('name,slug');
     }
   });
 
   it('should accept filter parameter', () => {
-    const result = BrowsePostsInputSchema.safeParse({ filter: 'tag:getting-started' });
+    const result = BrowseTagsInputSchema.safeParse({ filter: 'visibility:public' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.filter).toBe('tag:getting-started');
+      expect(result.data.filter).toBe('visibility:public');
     }
   });
 
   it('should accept numeric limit', () => {
-    const result = BrowsePostsInputSchema.safeParse({ limit: 10 });
+    const result = BrowseTagsInputSchema.safeParse({ limit: 10 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe(10);
@@ -98,7 +90,7 @@ describe('BrowsePostsInputSchema', () => {
   });
 
   it('should accept "all" as limit', () => {
-    const result = BrowsePostsInputSchema.safeParse({ limit: 'all' });
+    const result = BrowseTagsInputSchema.safeParse({ limit: 'all' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe('all');
@@ -106,7 +98,7 @@ describe('BrowsePostsInputSchema', () => {
   });
 
   it('should accept page parameter', () => {
-    const result = BrowsePostsInputSchema.safeParse({ page: 2 });
+    const result = BrowseTagsInputSchema.safeParse({ page: 2 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.page).toBe(2);
@@ -114,24 +106,23 @@ describe('BrowsePostsInputSchema', () => {
   });
 
   it('should accept order parameter', () => {
-    const result = BrowsePostsInputSchema.safeParse({ order: 'published_at DESC' });
+    const result = BrowseTagsInputSchema.safeParse({ order: 'name ASC' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.order).toBe('published_at DESC');
+      expect(result.data.order).toBe('name ASC');
     }
   });
 
   it('should accept all parameters together', () => {
     const input = {
-      include: 'tags,authors',
-      fields: 'title,slug',
-      formats: 'html',
-      filter: 'featured:true',
+      include: 'count.posts',
+      fields: 'name,slug',
+      filter: 'visibility:public',
       limit: 5,
       page: 1,
-      order: 'title ASC',
+      order: 'name ASC',
     };
-    const result = BrowsePostsInputSchema.safeParse(input);
+    const result = BrowseTagsInputSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual(input);
@@ -139,29 +130,29 @@ describe('BrowsePostsInputSchema', () => {
   });
 
   it('should reject invalid limit (negative)', () => {
-    const result = BrowsePostsInputSchema.safeParse({ limit: -1 });
+    const result = BrowseTagsInputSchema.safeParse({ limit: -1 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid limit (zero)', () => {
-    const result = BrowsePostsInputSchema.safeParse({ limit: 0 });
+    const result = BrowseTagsInputSchema.safeParse({ limit: 0 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid page (negative)', () => {
-    const result = BrowsePostsInputSchema.safeParse({ page: -1 });
+    const result = BrowseTagsInputSchema.safeParse({ page: -1 });
     expect(result.success).toBe(false);
   });
 
   it('should reject invalid page (zero)', () => {
-    const result = BrowsePostsInputSchema.safeParse({ page: 0 });
+    const result = BrowseTagsInputSchema.safeParse({ page: 0 });
     expect(result.success).toBe(false);
   });
 });
 
-describe('ReadPostInputSchema', () => {
+describe('ReadTagInputSchema', () => {
   it('should accept id parameter', () => {
-    const result = ReadPostInputSchema.safeParse({ id: '123' });
+    const result = ReadTagInputSchema.safeParse({ id: '123' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe('123');
@@ -169,15 +160,15 @@ describe('ReadPostInputSchema', () => {
   });
 
   it('should accept slug parameter', () => {
-    const result = ReadPostInputSchema.safeParse({ slug: 'my-post' });
+    const result = ReadTagInputSchema.safeParse({ slug: 'getting-started' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.slug).toBe('my-post');
+      expect(result.data.slug).toBe('getting-started');
     }
   });
 
   it('should reject if neither id nor slug provided', () => {
-    const result = ReadPostInputSchema.safeParse({});
+    const result = ReadTagInputSchema.safeParse({});
     expect(result.success).toBe(false);
     if (!result.success) {
       // Check that the error message is present in the error
@@ -187,7 +178,7 @@ describe('ReadPostInputSchema', () => {
   });
 
   it('should reject if both id and slug provided', () => {
-    const result = ReadPostInputSchema.safeParse({ id: '123', slug: 'my-post' });
+    const result = ReadTagInputSchema.safeParse({ id: '123', slug: 'getting-started' });
     expect(result.success).toBe(false);
     if (!result.success) {
       // Check that the error message is present in the error
@@ -197,43 +188,35 @@ describe('ReadPostInputSchema', () => {
   });
 
   it('should accept include parameter with id', () => {
-    const result = ReadPostInputSchema.safeParse({ id: '123', include: 'tags,authors' });
+    const result = ReadTagInputSchema.safeParse({ id: '123', include: 'count.posts' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.include).toBe('tags,authors');
+      expect(result.data.include).toBe('count.posts');
     }
   });
 
   it('should accept fields parameter with slug', () => {
-    const result = ReadPostInputSchema.safeParse({ slug: 'my-post', fields: 'title,html' });
+    const result = ReadTagInputSchema.safeParse({ slug: 'getting-started', fields: 'name,description' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.fields).toBe('title,html');
-    }
-  });
-
-  it('should accept formats parameter', () => {
-    const result = ReadPostInputSchema.safeParse({ id: '123', formats: 'html,plaintext' });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.formats).toBe('html,plaintext');
+      expect(result.data.fields).toBe('name,description');
     }
   });
 });
 
-describe('executeBrowsePosts', () => {
+describe('executeBrowseTags', () => {
   it('should call client.get with correct endpoint', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.pathname).toBe('/ghost/api/content/posts/');
+      expect(parsed.pathname).toBe('/ghost/api/content/tags/');
     });
 
-    await executeBrowsePosts(client, {});
+    await executeBrowseTags(client, {});
   });
 
   it('should pass include parameter', async () => {
@@ -242,12 +225,12 @@ describe('executeBrowsePosts', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('include')).toBe('tags,authors');
+      expect(parsed.searchParams.get('include')).toBe('count.posts');
     });
 
-    await executeBrowsePosts(client, { include: 'tags,authors' });
+    await executeBrowseTags(client, { include: 'count.posts' });
   });
 
   it('should pass filter parameter', async () => {
@@ -256,12 +239,12 @@ describe('executeBrowsePosts', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('filter')).toBe('tag:news');
+      expect(parsed.searchParams.get('filter')).toBe('visibility:public');
     });
 
-    await executeBrowsePosts(client, { filter: 'tag:news' });
+    await executeBrowseTags(client, { filter: 'visibility:public' });
   });
 
   it('should pass limit parameter', async () => {
@@ -270,12 +253,12 @@ describe('executeBrowsePosts', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('limit')).toBe('10');
     });
 
-    await executeBrowsePosts(client, { limit: 10 });
+    await executeBrowseTags(client, { limit: 10 });
   });
 
   it('should pass "all" as limit', async () => {
@@ -284,12 +267,12 @@ describe('executeBrowsePosts', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('limit')).toBe('all');
     });
 
-    await executeBrowsePosts(client, { limit: 'all' });
+    await executeBrowseTags(client, { limit: 'all' });
   });
 
   it('should pass page parameter', async () => {
@@ -298,22 +281,36 @@ describe('executeBrowsePosts', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [], meta: {} } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get('page')).toBe('2');
     });
 
-    await executeBrowsePosts(client, { page: 2 });
+    await executeBrowseTags(client, { page: 2 });
   });
 
-  it('should return posts response', async () => {
+  it('should pass order parameter', async () => {
+    const client = new GhostContentClient({
+      url: TEST_URL,
+      key: TEST_CONTENT_API_KEY,
+    });
+
+    mockFetch({ status: 200, body: { tags: [], meta: {} } }, (url) => {
+      const parsed = new URL(url);
+      expect(parsed.searchParams.get('order')).toBe('name ASC');
+    });
+
+    await executeBrowseTags(client, { order: 'name ASC' });
+  });
+
+  it('should return tags response', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
     const expectedResponse = {
-      posts: [{ id: '1', title: 'Test Post', slug: 'test-post' }],
+      tags: [{ id: '1', name: 'Getting Started', slug: 'getting-started' }],
       meta: {
         pagination: {
           page: 1,
@@ -328,9 +325,9 @@ describe('executeBrowsePosts', () => {
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeBrowsePosts(client, {});
-    expect(result.posts).toHaveLength(1);
-    expect(result.posts[0].title).toBe('Test Post');
+    const result = await executeBrowseTags(client, {});
+    expect(result.tags).toHaveLength(1);
+    expect(result.tags[0].name).toBe('Getting Started');
     expect(result.meta?.pagination?.total).toBe(1);
   });
 
@@ -345,23 +342,23 @@ describe('executeBrowsePosts', () => {
       body: { errors: [{ message: 'Unknown Content API Key' }] },
     });
 
-    await expect(executeBrowsePosts(client, {})).rejects.toThrow(GhostApiError);
+    await expect(executeBrowseTags(client, {})).rejects.toThrow(GhostApiError);
   });
 });
 
-describe('executeReadPost', () => {
+describe('executeReadTag', () => {
   it('should call client.get with id endpoint', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.pathname).toBe('/ghost/api/content/posts/123/');
+      expect(parsed.pathname).toBe('/ghost/api/content/tags/123/');
     });
 
-    await executeReadPost(client, { id: '123' });
+    await executeReadTag(client, { id: '123' });
   });
 
   it('should call client.get with slug endpoint', async () => {
@@ -370,12 +367,12 @@ describe('executeReadPost', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ slug: 'my-post' }] } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [{ slug: 'getting-started' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.pathname).toBe('/ghost/api/content/posts/slug/my-post/');
+      expect(parsed.pathname).toBe('/ghost/api/content/tags/slug/getting-started/');
     });
 
-    await executeReadPost(client, { slug: 'my-post' });
+    await executeReadTag(client, { slug: 'getting-started' });
   });
 
   it('should pass include parameter', async () => {
@@ -384,12 +381,12 @@ describe('executeReadPost', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('include')).toBe('tags,authors');
+      expect(parsed.searchParams.get('include')).toBe('count.posts');
     });
 
-    await executeReadPost(client, { id: '123', include: 'tags,authors' });
+    await executeReadTag(client, { id: '123', include: 'count.posts' });
   });
 
   it('should pass fields parameter', async () => {
@@ -398,51 +395,37 @@ describe('executeReadPost', () => {
       key: TEST_CONTENT_API_KEY,
     });
 
-    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
+    mockFetch({ status: 200, body: { tags: [{ id: '123' }] } }, (url) => {
       const parsed = new URL(url);
-      expect(parsed.searchParams.get('fields')).toBe('title,html');
+      expect(parsed.searchParams.get('fields')).toBe('name,description');
     });
 
-    await executeReadPost(client, { id: '123', fields: 'title,html' });
+    await executeReadTag(client, { id: '123', fields: 'name,description' });
   });
 
-  it('should pass formats parameter', async () => {
-    const client = new GhostContentClient({
-      url: TEST_URL,
-      key: TEST_CONTENT_API_KEY,
-    });
-
-    mockFetch({ status: 200, body: { posts: [{ id: '123' }] } }, (url) => {
-      const parsed = new URL(url);
-      expect(parsed.searchParams.get('formats')).toBe('html,plaintext');
-    });
-
-    await executeReadPost(client, { id: '123', formats: 'html,plaintext' });
-  });
-
-  it('should return post response', async () => {
+  it('should return tag response', async () => {
     const client = new GhostContentClient({
       url: TEST_URL,
       key: TEST_CONTENT_API_KEY,
     });
 
     const expectedResponse = {
-      posts: [
+      tags: [
         {
           id: '123',
-          title: 'Test Post',
-          slug: 'test-post',
-          html: '<p>Hello</p>',
+          name: 'Getting Started',
+          slug: 'getting-started',
+          description: 'A tag for beginners',
         },
       ],
     };
 
     mockFetch({ status: 200, body: expectedResponse });
 
-    const result = await executeReadPost(client, { id: '123' });
-    expect(result.posts).toHaveLength(1);
-    expect(result.posts[0].title).toBe('Test Post');
-    expect(result.posts[0].html).toBe('<p>Hello</p>');
+    const result = await executeReadTag(client, { id: '123' });
+    expect(result.tags).toHaveLength(1);
+    expect(result.tags[0].name).toBe('Getting Started');
+    expect(result.tags[0].description).toBe('A tag for beginners');
   });
 
   it('should throw GhostApiError on 404', async () => {
@@ -453,10 +436,10 @@ describe('executeReadPost', () => {
 
     mockFetch({
       status: 404,
-      body: { errors: [{ message: 'Post not found', type: 'NotFoundError' }] },
+      body: { errors: [{ message: 'Tag not found', type: 'NotFoundError' }] },
     });
 
-    await expect(executeReadPost(client, { id: 'nonexistent' })).rejects.toThrow(
+    await expect(executeReadTag(client, { id: 'nonexistent' })).rejects.toThrow(
       GhostApiError
     );
   });

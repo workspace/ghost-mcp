@@ -2,8 +2,8 @@
  * Tests for Ghost Content API HTTP client wrapper.
  */
 
-import { GhostContentClient } from './ghost-content-client.js';
-import { GhostApiError } from './errors.js';
+import { GhostContentClient } from '../../src/client/ghost-content-client.js';
+import { GhostApiError } from '../../src/client/errors.js';
 
 // Test Content API key (simple string, unlike Admin API's id:secret format)
 const TEST_CONTENT_API_KEY = '22444f78447824223cefc48062';

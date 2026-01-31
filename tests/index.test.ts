@@ -5,7 +5,7 @@ import {
   SERVER_CAPABILITIES,
   SERVER_NAME,
   SERVER_VERSION,
-} from './index.js';
+} from '../src/index.js';
 
 describe('ghost-mcp', () => {
   describe('SERVER_INFO', () => {
