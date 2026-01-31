@@ -525,3 +525,11 @@ export interface AdminTiersResponse {
   tiers: GhostTier[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Admin API newsletters endpoints.
+ */
+export interface AdminNewslettersResponse {
+  newsletters: GhostNewsletter[];
+  meta?: GhostApiMeta;
+}

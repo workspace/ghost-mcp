@@ -160,6 +160,24 @@ import {
   ADMIN_UPDATE_TIER_TOOL_NAME,
   ADMIN_UPDATE_TIER_TOOL_DESCRIPTION,
 } from './admin-tiers/index.js';
+import {
+  executeAdminBrowseNewsletters,
+  executeAdminReadNewsletter,
+  executeAdminCreateNewsletter,
+  executeAdminUpdateNewsletter,
+  AdminBrowseNewslettersInputSchema,
+  AdminReadNewsletterInputSchema,
+  AdminCreateNewsletterInputSchema,
+  AdminUpdateNewsletterInputSchema,
+  ADMIN_BROWSE_NEWSLETTERS_TOOL_NAME,
+  ADMIN_BROWSE_NEWSLETTERS_TOOL_DESCRIPTION,
+  ADMIN_READ_NEWSLETTER_TOOL_NAME,
+  ADMIN_READ_NEWSLETTER_TOOL_DESCRIPTION,
+  ADMIN_CREATE_NEWSLETTER_TOOL_NAME,
+  ADMIN_CREATE_NEWSLETTER_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_NEWSLETTER_TOOL_NAME,
+  ADMIN_UPDATE_NEWSLETTER_TOOL_DESCRIPTION,
+} from './admin-newsletters/index.js';
 
 /**
  * Configuration for Content API.
@@ -2267,6 +2285,276 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_browse_newsletters tool
+  server.tool(
+    ADMIN_BROWSE_NEWSLETTERS_TOOL_NAME,
+    ADMIN_BROWSE_NEWSLETTERS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include (comma-separated)'),
+      filter: z
+        .string()
+        .optional()
+        .describe(
+          'NQL filter expression (e.g., status:active, visibility:members)'
+        ),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of newsletters to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., sort_order ASC, name ASC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseNewslettersInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseNewsletters(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_newsletter tool
+  server.tool(
+    ADMIN_READ_NEWSLETTER_TOOL_NAME,
+    ADMIN_READ_NEWSLETTER_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Newsletter ID'),
+      slug: z.string().optional().describe('Newsletter slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include (comma-separated)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadNewsletterInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadNewsletter(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_newsletter tool
+  server.tool(
+    ADMIN_CREATE_NEWSLETTER_TOOL_NAME,
+    ADMIN_CREATE_NEWSLETTER_TOOL_DESCRIPTION,
+    {
+      name: z.string().describe('Newsletter name (required)'),
+      slug: z.string().optional().describe('URL slug'),
+      description: z.string().nullable().optional().describe('Newsletter description'),
+      status: z
+        .enum(['active', 'archived'])
+        .optional()
+        .describe('Newsletter status (default: active)'),
+      visibility: z
+        .enum(['members', 'paid'])
+        .optional()
+        .describe('Who can subscribe (default: members)'),
+      sender_name: z.string().nullable().optional().describe('Name shown as email sender'),
+      sender_email: z.string().nullable().optional().describe('Email address used as sender'),
+      sender_reply_to: z
+        .enum(['newsletter', 'support'])
+        .optional()
+        .describe('Reply-to address setting'),
+      subscribe_on_signup: z.boolean().optional().describe('Auto-subscribe new members'),
+      sort_order: z.number().int().optional().describe('Display order for newsletter'),
+      header_image: z.string().nullable().optional().describe('Header image URL'),
+      show_header_icon: z.boolean().optional().describe('Show site icon in header'),
+      show_header_title: z.boolean().optional().describe('Show site title in header'),
+      show_header_name: z.boolean().optional().describe('Show newsletter name in header'),
+      title_font_category: z.enum(['serif', 'sans_serif']).optional().describe('Title font style'),
+      title_alignment: z.enum(['left', 'center']).optional().describe('Title alignment'),
+      body_font_category: z.enum(['serif', 'sans_serif']).optional().describe('Body text font style'),
+      show_feature_image: z.boolean().optional().describe('Show feature image in emails'),
+      footer_content: z.string().nullable().optional().describe('Custom footer content'),
+      show_badge: z.boolean().optional().describe('Show Ghost badge in footer'),
+      show_post_title_section: z.boolean().optional().describe('Show post title section'),
+      show_comment_cta: z.boolean().optional().describe('Show comment call-to-action'),
+      show_subscription_details: z.boolean().optional().describe('Show subscription details'),
+      show_latest_posts: z.boolean().optional().describe('Show latest posts section'),
+      background_color: z.string().optional().describe('Background color'),
+      border_color: z.string().nullable().optional().describe('Border color (hex code)'),
+      title_color: z.string().nullable().optional().describe('Title color (hex code)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateNewsletterInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateNewsletter(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_newsletter tool
+  server.tool(
+    ADMIN_UPDATE_NEWSLETTER_TOOL_NAME,
+    ADMIN_UPDATE_NEWSLETTER_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Newsletter ID (required)'),
+      updated_at: z
+        .string()
+        .describe('Current updated_at timestamp for conflict prevention (required)'),
+      name: z.string().optional().describe('Newsletter name'),
+      slug: z.string().optional().describe('URL slug'),
+      description: z.string().nullable().optional().describe('Newsletter description'),
+      status: z
+        .enum(['active', 'archived'])
+        .optional()
+        .describe('Newsletter status'),
+      visibility: z
+        .enum(['members', 'paid'])
+        .optional()
+        .describe('Who can subscribe'),
+      sender_name: z.string().nullable().optional().describe('Name shown as email sender'),
+      sender_email: z.string().nullable().optional().describe('Email address used as sender'),
+      sender_reply_to: z
+        .enum(['newsletter', 'support'])
+        .optional()
+        .describe('Reply-to address setting'),
+      subscribe_on_signup: z.boolean().optional().describe('Auto-subscribe new members'),
+      sort_order: z.number().int().optional().describe('Display order for newsletter'),
+      header_image: z.string().nullable().optional().describe('Header image URL'),
+      show_header_icon: z.boolean().optional().describe('Show site icon in header'),
+      show_header_title: z.boolean().optional().describe('Show site title in header'),
+      show_header_name: z.boolean().optional().describe('Show newsletter name in header'),
+      title_font_category: z.enum(['serif', 'sans_serif']).optional().describe('Title font style'),
+      title_alignment: z.enum(['left', 'center']).optional().describe('Title alignment'),
+      body_font_category: z.enum(['serif', 'sans_serif']).optional().describe('Body text font style'),
+      show_feature_image: z.boolean().optional().describe('Show feature image in emails'),
+      footer_content: z.string().nullable().optional().describe('Custom footer content'),
+      show_badge: z.boolean().optional().describe('Show Ghost badge in footer'),
+      show_post_title_section: z.boolean().optional().describe('Show post title section'),
+      show_comment_cta: z.boolean().optional().describe('Show comment call-to-action'),
+      show_subscription_details: z.boolean().optional().describe('Show subscription details'),
+      show_latest_posts: z.boolean().optional().describe('Show latest posts section'),
+      background_color: z.string().optional().describe('Background color'),
+      border_color: z.string().nullable().optional().describe('Border color (hex code)'),
+      title_color: z.string().nullable().optional().describe('Title color (hex code)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateNewsletterInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateNewsletter(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -2297,3 +2585,4 @@ export * from './admin-pages/index.js';
 export * from './admin-tags/index.js';
 export * from './admin-members/index.js';
 export * from './admin-tiers/index.js';
+export * from './admin-newsletters/index.js';
