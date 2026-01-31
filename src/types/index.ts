@@ -42,4 +42,6 @@ export type {
   ContentPostsBrowseParams,
   ContentPostsReadParams,
   ContentPostsResponse,
+  ContentPagesResponse,
+  ContentTagsResponse,
 } from './ghost-api.js';

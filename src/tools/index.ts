@@ -29,6 +29,16 @@ import {
   READ_PAGE_TOOL_NAME,
   READ_PAGE_TOOL_DESCRIPTION,
 } from './content-pages/index.js';
+import {
+  executeBrowseTags,
+  executeReadTag,
+  BrowseTagsInputSchema,
+  ReadTagInputSchema,
+  BROWSE_TAGS_TOOL_NAME,
+  BROWSE_TAGS_TOOL_DESCRIPTION,
+  READ_TAG_TOOL_NAME,
+  READ_TAG_TOOL_DESCRIPTION,
+} from './content-tags/index.js';
 
 /**
  * Configuration for Content API.
@@ -331,6 +341,124 @@ export function registerContentApiTools(
       }
     }
   );
+
+  // Register content_browse_tags tool
+  server.tool(
+    BROWSE_TAGS_TOOL_NAME,
+    BROWSE_TAGS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: count.posts'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., visibility:public)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of tags to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., name ASC)'),
+    },
+    async (input) => {
+      try {
+        // Validate input
+        const validatedInput = BrowseTagsInputSchema.parse(input);
+
+        // Get client and execute
+        const contentClient = getClient();
+        const result = await executeBrowseTags(contentClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register content_read_tag tool
+  server.tool(
+    READ_TAG_TOOL_NAME,
+    READ_TAG_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Tag ID'),
+      slug: z.string().optional().describe('Tag slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: count.posts'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+    },
+    async (input) => {
+      try {
+        // Validate input
+        const validatedInput = ReadTagInputSchema.parse(input);
+
+        // Get client and execute
+        const contentClient = getClient();
+        const result = await executeReadTag(contentClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -351,3 +479,4 @@ export function registerAllTools(
 // Re-export individual tool modules
 export * from './content-posts/index.js';
 export * from './content-pages/index.js';
+export * from './content-tags/index.js';

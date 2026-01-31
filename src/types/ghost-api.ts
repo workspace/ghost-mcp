@@ -465,3 +465,11 @@ export interface ContentPagesResponse {
   pages: GhostPage[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Content API tags endpoints.
+ */
+export interface ContentTagsResponse {
+  tags: GhostTag[];
+  meta?: GhostApiMeta;
+}
