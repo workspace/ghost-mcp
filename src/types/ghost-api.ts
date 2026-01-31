@@ -501,3 +501,11 @@ export interface AdminPagesResponse {
   pages: GhostPage[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Admin API tags endpoints.
+ */
+export interface AdminTagsResponse {
+  tags: GhostTag[];
+  meta?: GhostApiMeta;
+}

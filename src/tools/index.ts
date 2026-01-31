@@ -102,6 +102,28 @@ import {
   ADMIN_COPY_PAGE_TOOL_NAME,
   ADMIN_COPY_PAGE_TOOL_DESCRIPTION,
 } from './admin-pages/index.js';
+import {
+  executeAdminBrowseTags,
+  executeAdminReadTag,
+  executeAdminCreateTag,
+  executeAdminUpdateTag,
+  executeAdminDeleteTag,
+  AdminBrowseTagsInputSchema,
+  AdminReadTagInputSchema,
+  AdminCreateTagInputSchema,
+  AdminUpdateTagInputSchema,
+  AdminDeleteTagInputSchema,
+  ADMIN_BROWSE_TAGS_TOOL_NAME,
+  ADMIN_BROWSE_TAGS_TOOL_DESCRIPTION,
+  ADMIN_READ_TAG_TOOL_NAME,
+  ADMIN_READ_TAG_TOOL_DESCRIPTION,
+  ADMIN_CREATE_TAG_TOOL_NAME,
+  ADMIN_CREATE_TAG_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_TAG_TOOL_NAME,
+  ADMIN_UPDATE_TAG_TOOL_DESCRIPTION,
+  ADMIN_DELETE_TAG_TOOL_NAME,
+  ADMIN_DELETE_TAG_TOOL_DESCRIPTION,
+} from './admin-tags/index.js';
 
 /**
  * Configuration for Content API.
@@ -1384,6 +1406,275 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_browse_tags tool
+  server.tool(
+    ADMIN_BROWSE_TAGS_TOOL_NAME,
+    ADMIN_BROWSE_TAGS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: count.posts'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., visibility:public)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of tags to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., name ASC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseTagsInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseTags(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_tag tool
+  server.tool(
+    ADMIN_READ_TAG_TOOL_NAME,
+    ADMIN_READ_TAG_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Tag ID'),
+      slug: z.string().optional().describe('Tag slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: count.posts'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadTagInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadTag(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_tag tool
+  server.tool(
+    ADMIN_CREATE_TAG_TOOL_NAME,
+    ADMIN_CREATE_TAG_TOOL_DESCRIPTION,
+    {
+      name: z.string().describe('Tag name (required)'),
+      slug: z.string().optional().describe('URL slug'),
+      description: z.string().nullable().optional().describe('Tag description'),
+      feature_image: z.string().nullable().optional().describe('Feature image URL'),
+      visibility: z
+        .enum(['public', 'internal'])
+        .optional()
+        .describe('Tag visibility (default: public)'),
+      og_image: z.string().nullable().optional().describe('Open Graph image URL'),
+      og_title: z.string().nullable().optional().describe('Open Graph title'),
+      og_description: z.string().nullable().optional().describe('Open Graph description'),
+      twitter_image: z.string().nullable().optional().describe('Twitter card image URL'),
+      twitter_title: z.string().nullable().optional().describe('Twitter card title'),
+      twitter_description: z.string().nullable().optional().describe('Twitter card description'),
+      meta_title: z.string().nullable().optional().describe('SEO meta title'),
+      meta_description: z.string().nullable().optional().describe('SEO meta description'),
+      codeinjection_head: z.string().nullable().optional().describe('Code for <head>'),
+      codeinjection_foot: z.string().nullable().optional().describe('Code for </body>'),
+      canonical_url: z.string().nullable().optional().describe('Canonical URL'),
+      accent_color: z.string().nullable().optional().describe('Accent color (hex code)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateTagInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateTag(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_tag tool
+  server.tool(
+    ADMIN_UPDATE_TAG_TOOL_NAME,
+    ADMIN_UPDATE_TAG_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Tag ID (required)'),
+      updated_at: z.string().describe('Current updated_at timestamp (required for conflict prevention)'),
+      name: z.string().optional().describe('Tag name'),
+      slug: z.string().optional().describe('URL slug'),
+      description: z.string().nullable().optional().describe('Tag description'),
+      feature_image: z.string().nullable().optional().describe('Feature image URL'),
+      visibility: z
+        .enum(['public', 'internal'])
+        .optional()
+        .describe('Tag visibility'),
+      og_image: z.string().nullable().optional().describe('Open Graph image URL'),
+      og_title: z.string().nullable().optional().describe('Open Graph title'),
+      og_description: z.string().nullable().optional().describe('Open Graph description'),
+      twitter_image: z.string().nullable().optional().describe('Twitter card image URL'),
+      twitter_title: z.string().nullable().optional().describe('Twitter card title'),
+      twitter_description: z.string().nullable().optional().describe('Twitter card description'),
+      meta_title: z.string().nullable().optional().describe('SEO meta title'),
+      meta_description: z.string().nullable().optional().describe('SEO meta description'),
+      codeinjection_head: z.string().nullable().optional().describe('Code for <head>'),
+      codeinjection_foot: z.string().nullable().optional().describe('Code for </body>'),
+      canonical_url: z.string().nullable().optional().describe('Canonical URL'),
+      accent_color: z.string().nullable().optional().describe('Accent color (hex code)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateTagInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateTag(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_delete_tag tool
+  server.tool(
+    ADMIN_DELETE_TAG_TOOL_NAME,
+    ADMIN_DELETE_TAG_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Tag ID to delete (required)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminDeleteTagInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminDeleteTag(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -1411,3 +1702,4 @@ export * from './content-tags/index.js';
 export * from './content-authors/index.js';
 export * from './admin-posts/index.js';
 export * from './admin-pages/index.js';
+export * from './admin-tags/index.js';
