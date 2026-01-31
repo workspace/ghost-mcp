@@ -579,3 +579,50 @@ export interface AdminInvitesResponse {
   invites: GhostInvite[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Ghost Settings resource (returned from /settings/ endpoint).
+ * Note: Settings endpoint returns an unwrapped object, not an array.
+ */
+export interface GhostSettings {
+  title: string;
+  description: string;
+  logo: string | null;
+  icon: string | null;
+  accent_color: string | null;
+  cover_image: string | null;
+  facebook: string | null;
+  twitter: string | null;
+  lang: string;
+  timezone: string;
+  codeinjection_head: string | null;
+  codeinjection_foot: string | null;
+  navigation: Array<{ label: string; url: string }>;
+  secondary_navigation: Array<{ label: string; url: string }>;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image: string | null;
+  og_title: string | null;
+  og_description: string | null;
+  twitter_image: string | null;
+  twitter_title: string | null;
+  twitter_description: string | null;
+  members_support_address: string;
+  url: string;
+}
+
+/**
+ * Response from Admin API site endpoint.
+ * Note: Site endpoint returns an unwrapped object, not an array.
+ */
+export interface AdminSiteResponse {
+  site: GhostSite;
+}
+
+/**
+ * Response from Admin API settings endpoint.
+ * Note: Settings endpoint returns an unwrapped object, not an array.
+ */
+export interface AdminSettingsResponse {
+  settings: GhostSettings;
+}

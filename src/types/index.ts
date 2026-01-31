@@ -34,6 +34,7 @@ export type {
   GhostTier,
   GhostNewsletter,
   GhostSite,
+  GhostSettings,
   GhostWebhook,
   GhostImage,
   GhostOffer,
@@ -44,4 +45,7 @@ export type {
   ContentPostsResponse,
   ContentPagesResponse,
   ContentTagsResponse,
+  // Admin API response types
+  AdminSiteResponse,
+  AdminSettingsResponse,
 } from './ghost-api.js';

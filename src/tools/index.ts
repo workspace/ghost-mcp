@@ -222,6 +222,16 @@ import {
   ADMIN_CREATE_INVITE_TOOL_NAME,
   ADMIN_CREATE_INVITE_TOOL_DESCRIPTION,
 } from './admin-invites/index.js';
+import {
+  executeAdminReadSite,
+  ADMIN_READ_SITE_TOOL_NAME,
+  ADMIN_READ_SITE_TOOL_DESCRIPTION,
+} from './admin-site/index.js';
+import {
+  executeAdminReadSettings,
+  ADMIN_READ_SETTINGS_TOOL_NAME,
+  ADMIN_READ_SETTINGS_TOOL_DESCRIPTION,
+} from './admin-settings/index.js';
 
 /**
  * Configuration for Content API.
@@ -3170,6 +3180,78 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_read_site tool
+  server.tool(
+    ADMIN_READ_SITE_TOOL_NAME,
+    ADMIN_READ_SITE_TOOL_DESCRIPTION,
+    {},
+    async () => {
+      try {
+        const adminClient = getClient();
+        const result = await executeAdminReadSite(adminClient);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_settings tool
+  server.tool(
+    ADMIN_READ_SETTINGS_TOOL_NAME,
+    ADMIN_READ_SETTINGS_TOOL_DESCRIPTION,
+    {},
+    async () => {
+      try {
+        const adminClient = getClient();
+        const result = await executeAdminReadSettings(adminClient);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -3205,3 +3287,5 @@ export * from './admin-offers/index.js';
 export * from './admin-users/index.js';
 export * from './admin-roles/index.js';
 export * from './admin-invites/index.js';
+export * from './admin-site/index.js';
+export * from './admin-settings/index.js';
