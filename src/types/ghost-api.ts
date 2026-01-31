@@ -457,3 +457,11 @@ export interface ContentPostsResponse {
   posts: GhostPost[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Content API pages endpoints.
+ */
+export interface ContentPagesResponse {
+  pages: GhostPage[];
+  meta?: GhostApiMeta;
+}

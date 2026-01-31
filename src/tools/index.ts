@@ -19,6 +19,16 @@ import {
   READ_POST_TOOL_NAME,
   READ_POST_TOOL_DESCRIPTION,
 } from './content-posts/index.js';
+import {
+  executeBrowsePages,
+  executeReadPage,
+  BrowsePagesInputSchema,
+  ReadPageInputSchema,
+  BROWSE_PAGES_TOOL_NAME,
+  BROWSE_PAGES_TOOL_DESCRIPTION,
+  READ_PAGE_TOOL_NAME,
+  READ_PAGE_TOOL_DESCRIPTION,
+} from './content-pages/index.js';
 
 /**
  * Configuration for Content API.
@@ -191,6 +201,136 @@ export function registerContentApiTools(
       }
     }
   );
+
+  // Register content_browse_pages tool
+  server.tool(
+    BROWSE_PAGES_TOOL_NAME,
+    BROWSE_PAGES_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: tags, authors (comma-separated)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      formats: z
+        .string()
+        .optional()
+        .describe(
+          'Content formats: html, plaintext, mobiledoc (comma-separated)'
+        ),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., tag:getting-started)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of pages to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., title ASC). Default: title'),
+    },
+    async (input) => {
+      try {
+        // Validate input
+        const validatedInput = BrowsePagesInputSchema.parse(input);
+
+        // Get client and execute
+        const contentClient = getClient();
+        const result = await executeBrowsePages(contentClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register content_read_page tool
+  server.tool(
+    READ_PAGE_TOOL_NAME,
+    READ_PAGE_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Page ID'),
+      slug: z.string().optional().describe('Page slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: tags, authors (comma-separated)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      formats: z
+        .string()
+        .optional()
+        .describe(
+          'Content formats: html, plaintext, mobiledoc (comma-separated)'
+        ),
+    },
+    async (input) => {
+      try {
+        // Validate input
+        const validatedInput = ReadPageInputSchema.parse(input);
+
+        // Get client and execute
+        const contentClient = getClient();
+        const result = await executeReadPage(contentClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -210,3 +350,4 @@ export function registerAllTools(
 
 // Re-export individual tool modules
 export * from './content-posts/index.js';
+export * from './content-pages/index.js';
