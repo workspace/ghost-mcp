@@ -1,8 +1,9 @@
 /**
- * Ghost Admin API client module.
+ * Ghost API client modules.
  *
- * Provides an HTTP client wrapper for communicating with the Ghost Admin API.
+ * Provides HTTP client wrappers for communicating with Ghost APIs.
  */
 
 export { GhostClient } from './ghost-client.js';
+export { GhostContentClient } from './ghost-content-client.js';
 export { GhostApiError } from './errors.js';

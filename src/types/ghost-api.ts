@@ -365,3 +365,95 @@ export interface GhostOffer {
   created_at?: string;
   updated_at?: string;
 }
+
+// =============================================================================
+// Content API Types
+// =============================================================================
+
+/**
+ * Configuration options for creating a Ghost Content API client.
+ */
+export interface GhostContentClientConfig {
+  /**
+   * The Ghost site URL (e.g., "https://yourblog.ghost.io")
+   */
+  url: string;
+
+  /**
+   * The Ghost Content API key (simple string token).
+   */
+  key: string;
+
+  /**
+   * API version to use. Defaults to "v5.0".
+   */
+  version?: string;
+}
+
+/**
+ * Query parameters for Content API posts browse endpoint.
+ */
+export interface ContentPostsBrowseParams {
+  /**
+   * Related data to include: 'tags', 'authors' (comma-separated)
+   */
+  include?: string;
+
+  /**
+   * Specific fields to return (comma-separated)
+   */
+  fields?: string;
+
+  /**
+   * Content format: 'html', 'plaintext', 'mobiledoc' (comma-separated)
+   */
+  formats?: string;
+
+  /**
+   * NQL filter expression (e.g., 'tag:getting-started')
+   */
+  filter?: string;
+
+  /**
+   * Number of posts to return (default 15)
+   */
+  limit?: number | 'all';
+
+  /**
+   * Page number for pagination
+   */
+  page?: number;
+
+  /**
+   * Sort order (e.g., 'published_at DESC')
+   */
+  order?: string;
+}
+
+/**
+ * Query parameters for Content API posts read endpoint.
+ */
+export interface ContentPostsReadParams {
+  /**
+   * Related data to include: 'tags', 'authors' (comma-separated)
+   */
+  include?: string;
+
+  /**
+   * Specific fields to return (comma-separated)
+   */
+  fields?: string;
+
+  /**
+   * Content format: 'html', 'plaintext', 'mobiledoc' (comma-separated)
+   */
+  formats?: string;
+}
+
+/**
+ * Response from Content API posts endpoints.
+ */
+export interface ContentPostsResponse {
+  posts: GhostPost[];
+  meta?: GhostApiMeta;
+}

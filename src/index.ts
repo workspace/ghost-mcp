@@ -8,6 +8,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { ServerInfo, GhostMcpCapabilities } from './types/index.js';
+import {
+  registerAllTools,
+  type ToolRegistrationConfig,
+} from './tools/index.js';
 
 /**
  * Server metadata following MCP Implementation interface.
@@ -35,12 +39,39 @@ const SERVER_NAME = SERVER_INFO.name;
 const SERVER_VERSION = SERVER_INFO.version;
 
 /**
- * Creates and configures the MCP server instance.
+ * Gets tool configuration from environment variables.
  */
-function createServer(): McpServer {
+function getToolConfig(): ToolRegistrationConfig {
+  const config: ToolRegistrationConfig = {};
+
+  // Content API configuration
+  const contentUrl = process.env.GHOST_URL;
+  const contentKey = process.env.GHOST_CONTENT_API_KEY;
+
+  if (contentUrl && contentKey) {
+    config.contentApi = {
+      url: contentUrl,
+      key: contentKey,
+      version: process.env.GHOST_API_VERSION,
+    };
+  }
+
+  return config;
+}
+
+/**
+ * Creates and configures the MCP server instance.
+ *
+ * @param toolConfig - Optional tool configuration (defaults to environment variables)
+ */
+function createServer(toolConfig?: ToolRegistrationConfig): McpServer {
   const server = new McpServer(SERVER_INFO, {
     capabilities: SERVER_CAPABILITIES,
   });
+
+  // Register tools
+  const config = toolConfig ?? getToolConfig();
+  registerAllTools(server, config);
 
   return server;
 }
@@ -79,11 +110,15 @@ async function main(): Promise<void> {
 // Export for testing and for use by other entry points (e.g., sse.ts)
 export {
   createServer,
+  getToolConfig,
   SERVER_INFO,
   SERVER_CAPABILITIES,
   SERVER_NAME,
   SERVER_VERSION,
 };
+
+// Re-export types for convenience
+export type { ToolRegistrationConfig } from './tools/index.js';
 
 // Run the server only when executed directly (not when imported as a module)
 const isMainModule = import.meta.url === `file://${process.argv[1]}`;

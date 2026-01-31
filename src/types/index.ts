@@ -37,4 +37,9 @@ export type {
   GhostWebhook,
   GhostImage,
   GhostOffer,
+  // Content API types
+  GhostContentClientConfig,
+  ContentPostsBrowseParams,
+  ContentPostsReadParams,
+  ContentPostsResponse,
 } from './ghost-api.js';
