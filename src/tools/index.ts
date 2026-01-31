@@ -238,6 +238,16 @@ import {
   ADMIN_UPLOAD_IMAGE_TOOL_NAME,
   ADMIN_UPLOAD_IMAGE_TOOL_DESCRIPTION,
 } from './admin-images/index.js';
+import {
+  executeAdminUploadTheme,
+  executeAdminActivateTheme,
+  AdminUploadThemeInputSchema,
+  AdminActivateThemeInputSchema,
+  ADMIN_UPLOAD_THEME_TOOL_NAME,
+  ADMIN_UPLOAD_THEME_TOOL_DESCRIPTION,
+  ADMIN_ACTIVATE_THEME_TOOL_NAME,
+  ADMIN_ACTIVATE_THEME_TOOL_DESCRIPTION,
+} from './admin-themes/index.js';
 
 /**
  * Configuration for Content API.
@@ -3323,6 +3333,105 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_upload_theme tool
+  server.tool(
+    ADMIN_UPLOAD_THEME_TOOL_NAME,
+    ADMIN_UPLOAD_THEME_TOOL_DESCRIPTION,
+    {
+      file_path: z
+        .string()
+        .describe('Path to the theme .zip file on the local filesystem'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUploadThemeInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUploadTheme(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Handle file system errors
+        if (error instanceof Error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_activate_theme tool
+  server.tool(
+    ADMIN_ACTIVATE_THEME_TOOL_NAME,
+    ADMIN_ACTIVATE_THEME_TOOL_DESCRIPTION,
+    {
+      name: z.string().describe('The name of the theme to activate'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminActivateThemeInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminActivateTheme(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -3361,3 +3470,4 @@ export * from './admin-invites/index.js';
 export * from './admin-site/index.js';
 export * from './admin-settings/index.js';
 export * from './admin-images/index.js';
+export * from './admin-themes/index.js';

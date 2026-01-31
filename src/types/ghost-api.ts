@@ -643,3 +643,34 @@ export interface AdminSettingsResponse {
 export interface AdminImagesResponse {
   images: GhostImage[];
 }
+
+// =============================================================================
+// Theme Types
+// =============================================================================
+
+/**
+ * Ghost Theme template resource.
+ */
+export interface GhostThemeTemplate {
+  filename: string;
+  name: string;
+  for: string[];
+  slug: string | null;
+}
+
+/**
+ * Ghost Theme resource.
+ */
+export interface GhostTheme {
+  name: string;
+  package: Record<string, unknown>;
+  active: boolean;
+  templates?: GhostThemeTemplate[];
+}
+
+/**
+ * Response from Admin API themes endpoints.
+ */
+export interface AdminThemesResponse {
+  themes: GhostTheme[];
+}
