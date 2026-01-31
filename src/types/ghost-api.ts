@@ -473,3 +473,11 @@ export interface ContentTagsResponse {
   tags: GhostTag[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Content API authors endpoints.
+ */
+export interface ContentAuthorsResponse {
+  authors: GhostAuthor[];
+  meta?: GhostApiMeta;
+}

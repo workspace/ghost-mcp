@@ -39,6 +39,16 @@ import {
   READ_TAG_TOOL_NAME,
   READ_TAG_TOOL_DESCRIPTION,
 } from './content-tags/index.js';
+import {
+  executeBrowseAuthors,
+  executeReadAuthor,
+  BrowseAuthorsInputSchema,
+  ReadAuthorInputSchema,
+  BROWSE_AUTHORS_TOOL_NAME,
+  BROWSE_AUTHORS_TOOL_DESCRIPTION,
+  READ_AUTHOR_TOOL_NAME,
+  READ_AUTHOR_TOOL_DESCRIPTION,
+} from './content-authors/index.js';
 
 /**
  * Configuration for Content API.
@@ -459,6 +469,124 @@ export function registerContentApiTools(
       }
     }
   );
+
+  // Register content_browse_authors tool
+  server.tool(
+    BROWSE_AUTHORS_TOOL_NAME,
+    BROWSE_AUTHORS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: count.posts'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., slug:john-doe)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of authors to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., name ASC)'),
+    },
+    async (input) => {
+      try {
+        // Validate input
+        const validatedInput = BrowseAuthorsInputSchema.parse(input);
+
+        // Get client and execute
+        const contentClient = getClient();
+        const result = await executeBrowseAuthors(contentClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register content_read_author tool
+  server.tool(
+    READ_AUTHOR_TOOL_NAME,
+    READ_AUTHOR_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Author ID'),
+      slug: z.string().optional().describe('Author slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: count.posts'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+    },
+    async (input) => {
+      try {
+        // Validate input
+        const validatedInput = ReadAuthorInputSchema.parse(input);
+
+        // Get client and execute
+        const contentClient = getClient();
+        const result = await executeReadAuthor(contentClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -480,3 +608,4 @@ export function registerAllTools(
 export * from './content-posts/index.js';
 export * from './content-pages/index.js';
 export * from './content-tags/index.js';
+export * from './content-authors/index.js';
