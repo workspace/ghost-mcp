@@ -1,6 +1,30 @@
 # Ghost MCP
 
-An MCP (Model Context Protocol) server providing tools for interacting with Ghost CMS blogs.
+An MCP (Model Context Protocol) server for interacting with Ghost CMS blogs through AI assistants.
+
+## Quick Start
+
+Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "ghost": {
+      "command": "npx",
+      "args": ["-y", "@ryukimin/ghost-mcp"],
+      "env": {
+        "GHOST_URL": "https://your-blog.ghost.io",
+        "GHOST_CONTENT_API_KEY": "your-content-api-key",
+        "GHOST_ADMIN_API_KEY": "your-admin-api-key"
+      }
+    }
+  }
+}
+```
+
+Config file location:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ## Features
 
@@ -8,16 +32,52 @@ An MCP (Model Context Protocol) server providing tools for interacting with Ghos
 - **Admin API** (full CRUD): Create, update, and delete posts, pages, tags, members, newsletters, tiers, offers, webhooks, and more
 - **Multiple transports**: stdio for local development, HTTP/SSE for remote deployment
 
-## Installation
+## Available Tools
 
-```bash
-npm install
-npm run build
-```
+### Content API (8 tools)
+
+- `content_browse_posts` - List posts with filtering and pagination
+- `content_read_post` - Get a single post by ID or slug
+- `content_browse_pages` - List pages
+- `content_read_page` - Get a single page
+- `content_browse_tags` - List tags
+- `content_read_tag` - Get a single tag
+- `content_browse_authors` - List authors
+- `content_read_author` - Get a single author
+
+### Admin API (46 tools)
+
+**Posts:** `admin_browse_posts`, `admin_read_post`, `admin_create_post`, `admin_update_post`, `admin_delete_post`, `admin_copy_post`
+
+**Pages:** `admin_browse_pages`, `admin_read_page`, `admin_create_page`, `admin_update_page`, `admin_delete_page`, `admin_copy_page`
+
+**Tags:** `admin_browse_tags`, `admin_read_tag`, `admin_create_tag`, `admin_update_tag`, `admin_delete_tag`
+
+**Members:** `admin_browse_members`, `admin_read_member`, `admin_create_member`, `admin_update_member`
+
+**Tiers:** `admin_browse_tiers`, `admin_read_tier`, `admin_create_tier`, `admin_update_tier`
+
+**Newsletters:** `admin_browse_newsletters`, `admin_read_newsletter`, `admin_create_newsletter`, `admin_update_newsletter`
+
+**Offers:** `admin_browse_offers`, `admin_create_offer`, `admin_update_offer`
+
+**Users:** `admin_browse_users`, `admin_read_user`, `admin_update_user`, `admin_delete_user`
+
+**Roles:** `admin_browse_roles`
+
+**Invites:** `admin_create_invite`
+
+**Webhooks:** `admin_create_webhook`, `admin_update_webhook`, `admin_delete_webhook`
+
+**Site:** `admin_read_site`, `admin_read_settings`
+
+**Images:** `admin_upload_image`
+
+**Themes:** `admin_upload_theme`, `admin_activate_theme`
 
 ## Configuration
 
-Set these environment variables:
+### Environment Variables
 
 | Variable                | Required        | Description                                           |
 | ----------------------- | --------------- | ----------------------------------------------------- |
@@ -33,20 +93,6 @@ Set these environment variables:
 2. Create a new Custom Integration
 3. Copy the **Content API Key** for read-only access
 4. Copy the **Admin API Key** for full access
-
-## Running the Server
-
-### Stdio Transport (Local Development)
-
-```bash
-npm start
-```
-
-### HTTP/SSE Transport (Remote Deployment)
-
-```bash
-npm run start:sse
-```
 
 ## Usage Examples
 
@@ -465,48 +511,28 @@ Ghost uses NQL (Notion Query Language) for filtering. Here are common patterns:
 | `visibility:public`   | Public tags              |
 | `visibility:internal` | Internal tags (# prefix) |
 
-## Available Tools
+## Installation (Development)
 
-### Content API (8 tools)
+For contributing or running from source:
 
-- `content_browse_posts` - List posts with filtering and pagination
-- `content_read_post` - Get a single post by ID or slug
-- `content_browse_pages` - List pages
-- `content_read_page` - Get a single page
-- `content_browse_tags` - List tags
-- `content_read_tag` - Get a single tag
-- `content_browse_authors` - List authors
-- `content_read_author` - Get a single author
+```bash
+npm install
+npm run build
+```
 
-### Admin API (46 tools)
+### Running the Server
 
-**Posts:** `admin_browse_posts`, `admin_read_post`, `admin_create_post`, `admin_update_post`, `admin_delete_post`, `admin_copy_post`
+#### Stdio Transport (Local Development)
 
-**Pages:** `admin_browse_pages`, `admin_read_page`, `admin_create_page`, `admin_update_page`, `admin_delete_page`, `admin_copy_page`
+```bash
+npm start
+```
 
-**Tags:** `admin_browse_tags`, `admin_read_tag`, `admin_create_tag`, `admin_update_tag`, `admin_delete_tag`
+#### HTTP/SSE Transport (Remote Deployment)
 
-**Members:** `admin_browse_members`, `admin_read_member`, `admin_create_member`, `admin_update_member`
-
-**Tiers:** `admin_browse_tiers`, `admin_read_tier`, `admin_create_tier`, `admin_update_tier`
-
-**Newsletters:** `admin_browse_newsletters`, `admin_read_newsletter`, `admin_create_newsletter`, `admin_update_newsletter`
-
-**Offers:** `admin_browse_offers`, `admin_create_offer`, `admin_update_offer`
-
-**Users:** `admin_browse_users`, `admin_read_user`, `admin_update_user`, `admin_delete_user`
-
-**Roles:** `admin_browse_roles`
-
-**Invites:** `admin_create_invite`
-
-**Webhooks:** `admin_create_webhook`, `admin_update_webhook`, `admin_delete_webhook`
-
-**Site:** `admin_read_site`, `admin_read_settings`
-
-**Images:** `admin_upload_image`
-
-**Themes:** `admin_upload_theme`, `admin_activate_theme`
+```bash
+npm run start:sse
+```
 
 ## License
 
