@@ -493,3 +493,11 @@ export interface AdminPostsResponse {
   posts: GhostPost[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Admin API pages endpoints.
+ */
+export interface AdminPagesResponse {
+  pages: GhostPage[];
+  meta?: GhostApiMeta;
+}

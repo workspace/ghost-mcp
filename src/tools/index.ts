@@ -76,6 +76,32 @@ import {
   ADMIN_COPY_POST_TOOL_NAME,
   ADMIN_COPY_POST_TOOL_DESCRIPTION,
 } from './admin-posts/index.js';
+import {
+  executeAdminBrowsePages,
+  executeAdminReadPage,
+  executeAdminCreatePage,
+  executeAdminUpdatePage,
+  executeAdminDeletePage,
+  executeAdminCopyPage,
+  AdminBrowsePagesInputSchema,
+  AdminReadPageInputSchema,
+  AdminCreatePageInputSchema,
+  AdminUpdatePageInputSchema,
+  AdminDeletePageInputSchema,
+  AdminCopyPageInputSchema,
+  ADMIN_BROWSE_PAGES_TOOL_NAME,
+  ADMIN_BROWSE_PAGES_TOOL_DESCRIPTION,
+  ADMIN_READ_PAGE_TOOL_NAME,
+  ADMIN_READ_PAGE_TOOL_DESCRIPTION,
+  ADMIN_CREATE_PAGE_TOOL_NAME,
+  ADMIN_CREATE_PAGE_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_PAGE_TOOL_NAME,
+  ADMIN_UPDATE_PAGE_TOOL_DESCRIPTION,
+  ADMIN_DELETE_PAGE_TOOL_NAME,
+  ADMIN_DELETE_PAGE_TOOL_DESCRIPTION,
+  ADMIN_COPY_PAGE_TOOL_NAME,
+  ADMIN_COPY_PAGE_TOOL_DESCRIPTION,
+} from './admin-pages/index.js';
 
 /**
  * Configuration for Content API.
@@ -1006,6 +1032,358 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_browse_pages tool
+  server.tool(
+    ADMIN_BROWSE_PAGES_TOOL_NAME,
+    ADMIN_BROWSE_PAGES_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: tags, authors (comma-separated)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      formats: z
+        .string()
+        .optional()
+        .describe('Content formats: html, lexical (comma-separated)'),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., status:draft)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of pages to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., title ASC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowsePagesInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowsePages(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_page tool
+  server.tool(
+    ADMIN_READ_PAGE_TOOL_NAME,
+    ADMIN_READ_PAGE_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Page ID'),
+      slug: z.string().optional().describe('Page slug'),
+      include: z
+        .string()
+        .optional()
+        .describe('Related data to include: tags, authors (comma-separated)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      formats: z
+        .string()
+        .optional()
+        .describe('Content formats: html, lexical (comma-separated)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadPageInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadPage(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_page tool
+  server.tool(
+    ADMIN_CREATE_PAGE_TOOL_NAME,
+    ADMIN_CREATE_PAGE_TOOL_DESCRIPTION,
+    {
+      title: z.string().describe('Page title (required)'),
+      slug: z.string().optional().describe('URL slug'),
+      lexical: z.string().optional().describe('Page content in Lexical JSON format'),
+      mobiledoc: z.string().optional().describe('Page content in Mobiledoc JSON format'),
+      html: z.string().optional().describe('Page content in HTML format'),
+      feature_image: z.string().nullable().optional().describe('Feature image URL'),
+      featured: z.boolean().optional().describe('Whether the page is featured'),
+      status: z
+        .enum(['published', 'draft', 'scheduled'])
+        .optional()
+        .describe('Publication status (default: draft)'),
+      visibility: z
+        .enum(['public', 'members', 'paid', 'tiers'])
+        .optional()
+        .describe('Content visibility'),
+      tags: z.array(z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Tags to assign'),
+      authors: z.array(z.object({
+        id: z.string().optional(),
+        email: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Authors to assign'),
+      custom_excerpt: z.string().nullable().optional().describe('Custom excerpt'),
+      canonical_url: z.string().nullable().optional().describe('Canonical URL'),
+      meta_title: z.string().nullable().optional().describe('SEO meta title'),
+      meta_description: z.string().nullable().optional().describe('SEO meta description'),
+      og_image: z.string().nullable().optional().describe('Open Graph image URL'),
+      og_title: z.string().nullable().optional().describe('Open Graph title'),
+      og_description: z.string().nullable().optional().describe('Open Graph description'),
+      twitter_image: z.string().nullable().optional().describe('Twitter card image URL'),
+      twitter_title: z.string().nullable().optional().describe('Twitter card title'),
+      twitter_description: z.string().nullable().optional().describe('Twitter card description'),
+      codeinjection_head: z.string().nullable().optional().describe('Code for <head>'),
+      codeinjection_foot: z.string().nullable().optional().describe('Code for </body>'),
+      published_at: z.string().nullable().optional().describe('Publication date (ISO 8601)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreatePageInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreatePage(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_page tool
+  server.tool(
+    ADMIN_UPDATE_PAGE_TOOL_NAME,
+    ADMIN_UPDATE_PAGE_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Page ID (required)'),
+      updated_at: z.string().describe('Current updated_at timestamp (required for conflict prevention)'),
+      title: z.string().optional().describe('Page title'),
+      slug: z.string().optional().describe('URL slug'),
+      lexical: z.string().optional().describe('Page content in Lexical JSON format'),
+      mobiledoc: z.string().optional().describe('Page content in Mobiledoc JSON format'),
+      html: z.string().optional().describe('Page content in HTML format'),
+      feature_image: z.string().nullable().optional().describe('Feature image URL'),
+      featured: z.boolean().optional().describe('Whether the page is featured'),
+      status: z
+        .enum(['published', 'draft', 'scheduled'])
+        .optional()
+        .describe('Publication status'),
+      visibility: z
+        .enum(['public', 'members', 'paid', 'tiers'])
+        .optional()
+        .describe('Content visibility'),
+      tags: z.array(z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Tags to assign (replaces existing)'),
+      authors: z.array(z.object({
+        id: z.string().optional(),
+        email: z.string().optional(),
+        slug: z.string().optional(),
+      })).optional().describe('Authors to assign (replaces existing)'),
+      custom_excerpt: z.string().nullable().optional().describe('Custom excerpt'),
+      canonical_url: z.string().nullable().optional().describe('Canonical URL'),
+      meta_title: z.string().nullable().optional().describe('SEO meta title'),
+      meta_description: z.string().nullable().optional().describe('SEO meta description'),
+      og_image: z.string().nullable().optional().describe('Open Graph image URL'),
+      og_title: z.string().nullable().optional().describe('Open Graph title'),
+      og_description: z.string().nullable().optional().describe('Open Graph description'),
+      twitter_image: z.string().nullable().optional().describe('Twitter card image URL'),
+      twitter_title: z.string().nullable().optional().describe('Twitter card title'),
+      twitter_description: z.string().nullable().optional().describe('Twitter card description'),
+      codeinjection_head: z.string().nullable().optional().describe('Code for <head>'),
+      codeinjection_foot: z.string().nullable().optional().describe('Code for </body>'),
+      published_at: z.string().nullable().optional().describe('Publication date (ISO 8601)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdatePageInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdatePage(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_delete_page tool
+  server.tool(
+    ADMIN_DELETE_PAGE_TOOL_NAME,
+    ADMIN_DELETE_PAGE_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Page ID to delete (required)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminDeletePageInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminDeletePage(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_copy_page tool
+  server.tool(
+    ADMIN_COPY_PAGE_TOOL_NAME,
+    ADMIN_COPY_PAGE_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Page ID to copy (required)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCopyPageInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCopyPage(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -1032,3 +1410,4 @@ export * from './content-pages/index.js';
 export * from './content-tags/index.js';
 export * from './content-authors/index.js';
 export * from './admin-posts/index.js';
+export * from './admin-pages/index.js';
