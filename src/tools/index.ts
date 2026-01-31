@@ -248,6 +248,20 @@ import {
   ADMIN_ACTIVATE_THEME_TOOL_NAME,
   ADMIN_ACTIVATE_THEME_TOOL_DESCRIPTION,
 } from './admin-themes/index.js';
+import {
+  executeAdminCreateWebhook,
+  executeAdminUpdateWebhook,
+  executeAdminDeleteWebhook,
+  AdminCreateWebhookInputSchema,
+  AdminUpdateWebhookInputSchema,
+  AdminDeleteWebhookInputSchema,
+  ADMIN_CREATE_WEBHOOK_TOOL_NAME,
+  ADMIN_CREATE_WEBHOOK_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_WEBHOOK_TOOL_NAME,
+  ADMIN_UPDATE_WEBHOOK_TOOL_DESCRIPTION,
+  ADMIN_DELETE_WEBHOOK_TOOL_NAME,
+  ADMIN_DELETE_WEBHOOK_TOOL_DESCRIPTION,
+} from './admin-webhooks/index.js';
 
 /**
  * Configuration for Content API.
@@ -3432,6 +3446,171 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_create_webhook tool
+  server.tool(
+    ADMIN_CREATE_WEBHOOK_TOOL_NAME,
+    ADMIN_CREATE_WEBHOOK_TOOL_DESCRIPTION,
+    {
+      event: z
+        .string()
+        .describe(
+          'Webhook trigger event (required). Available events: site.changed, post.added, post.deleted, post.edited, post.published, post.unpublished, post.scheduled, post.unscheduled, post.rescheduled, page.added, page.deleted, page.edited, page.published, page.unpublished, page.scheduled, page.unscheduled, page.rescheduled, tag.added, tag.edited, tag.deleted, post.tag.attached, post.tag.detached, page.tag.attached, page.tag.detached, member.added, member.edited, member.deleted'
+        ),
+      target_url: z
+        .string()
+        .url()
+        .describe('Destination URL for webhook payloads (required)'),
+      name: z
+        .string()
+        .optional()
+        .describe('Descriptive name for the webhook'),
+      secret: z
+        .string()
+        .optional()
+        .describe('Secret for request signature validation'),
+      api_version: z
+        .string()
+        .optional()
+        .describe('API version for payload format (default: v6)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateWebhookInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateWebhook(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_webhook tool
+  server.tool(
+    ADMIN_UPDATE_WEBHOOK_TOOL_NAME,
+    ADMIN_UPDATE_WEBHOOK_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Webhook ID (required)'),
+      event: z
+        .string()
+        .optional()
+        .describe(
+          'Webhook trigger event. Available events: site.changed, post.added, post.deleted, post.edited, post.published, post.unpublished, post.scheduled, post.unscheduled, post.rescheduled, page.added, page.deleted, page.edited, page.published, page.unpublished, page.scheduled, page.unscheduled, page.rescheduled, tag.added, tag.edited, tag.deleted, post.tag.attached, post.tag.detached, page.tag.attached, page.tag.detached, member.added, member.edited, member.deleted'
+        ),
+      target_url: z
+        .string()
+        .url()
+        .optional()
+        .describe('Destination URL for webhook payloads'),
+      name: z
+        .string()
+        .optional()
+        .describe('Descriptive name for the webhook'),
+      api_version: z
+        .string()
+        .optional()
+        .describe('API version for payload format'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateWebhookInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateWebhook(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_delete_webhook tool
+  server.tool(
+    ADMIN_DELETE_WEBHOOK_TOOL_NAME,
+    ADMIN_DELETE_WEBHOOK_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Webhook ID to delete (required)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminDeleteWebhookInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminDeleteWebhook(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -3471,3 +3650,4 @@ export * from './admin-site/index.js';
 export * from './admin-settings/index.js';
 export * from './admin-images/index.js';
 export * from './admin-themes/index.js';
+export * from './admin-webhooks/index.js';

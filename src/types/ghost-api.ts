@@ -553,6 +553,14 @@ export interface AdminOffersResponse {
 }
 
 /**
+ * Response from Admin API webhooks endpoints.
+ */
+export interface AdminWebhooksResponse {
+  webhooks: GhostWebhook[];
+  meta?: GhostApiMeta;
+}
+
+/**
  * Ghost Invite resource.
  */
 export interface GhostInvite {
