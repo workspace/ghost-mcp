@@ -192,6 +192,36 @@ import {
   ADMIN_UPDATE_OFFER_TOOL_NAME,
   ADMIN_UPDATE_OFFER_TOOL_DESCRIPTION,
 } from './admin-offers/index.js';
+import {
+  executeAdminBrowseUsers,
+  executeAdminReadUser,
+  executeAdminUpdateUser,
+  executeAdminDeleteUser,
+  AdminBrowseUsersInputSchema,
+  AdminReadUserInputSchema,
+  AdminUpdateUserInputSchema,
+  AdminDeleteUserInputSchema,
+  ADMIN_BROWSE_USERS_TOOL_NAME,
+  ADMIN_BROWSE_USERS_TOOL_DESCRIPTION,
+  ADMIN_READ_USER_TOOL_NAME,
+  ADMIN_READ_USER_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_USER_TOOL_NAME,
+  ADMIN_UPDATE_USER_TOOL_DESCRIPTION,
+  ADMIN_DELETE_USER_TOOL_NAME,
+  ADMIN_DELETE_USER_TOOL_DESCRIPTION,
+} from './admin-users/index.js';
+import {
+  executeAdminBrowseRoles,
+  AdminBrowseRolesInputSchema,
+  ADMIN_BROWSE_ROLES_TOOL_NAME,
+  ADMIN_BROWSE_ROLES_TOOL_DESCRIPTION,
+} from './admin-roles/index.js';
+import {
+  executeAdminCreateInvite,
+  AdminCreateInviteInputSchema,
+  ADMIN_CREATE_INVITE_TOOL_NAME,
+  ADMIN_CREATE_INVITE_TOOL_DESCRIPTION,
+} from './admin-invites/index.js';
 
 /**
  * Configuration for Content API.
@@ -2781,6 +2811,365 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_browse_users tool
+  server.tool(
+    ADMIN_BROWSE_USERS_TOOL_NAME,
+    ADMIN_BROWSE_USERS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe(
+          'Related data to include: count.posts, permissions, roles, roles.permissions (comma-separated)'
+        ),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+      filter: z
+        .string()
+        .optional()
+        .describe('NQL filter expression (e.g., status:active, role:Editor)'),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of users to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., created_at DESC, name ASC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseUsersInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseUsers(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_user tool
+  server.tool(
+    ADMIN_READ_USER_TOOL_NAME,
+    ADMIN_READ_USER_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('User ID'),
+      slug: z.string().optional().describe('User slug'),
+      include: z
+        .string()
+        .optional()
+        .describe(
+          'Related data to include: count.posts, permissions, roles, roles.permissions (comma-separated)'
+        ),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadUserInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadUser(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_user tool
+  server.tool(
+    ADMIN_UPDATE_USER_TOOL_NAME,
+    ADMIN_UPDATE_USER_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('User ID (required)'),
+      updated_at: z
+        .string()
+        .describe(
+          'Current updated_at timestamp for conflict prevention (required)'
+        ),
+      name: z.string().optional().describe('User display name'),
+      slug: z.string().optional().describe('URL slug'),
+      email: z.string().email().optional().describe('User email address'),
+      profile_image: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Profile image URL'),
+      cover_image: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Cover image URL'),
+      bio: z.string().nullable().optional().describe('User biography'),
+      website: z.string().nullable().optional().describe('User website URL'),
+      location: z.string().nullable().optional().describe('User location'),
+      facebook: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Facebook username'),
+      twitter: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Twitter/X username'),
+      meta_title: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('SEO meta title'),
+      meta_description: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('SEO meta description'),
+      comment_notifications: z
+        .boolean()
+        .optional()
+        .describe('Receive comment notifications'),
+      mention_notifications: z
+        .boolean()
+        .optional()
+        .describe('Receive mention notifications'),
+      milestone_notifications: z
+        .boolean()
+        .optional()
+        .describe('Receive milestone notifications'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateUserInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateUser(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_delete_user tool
+  server.tool(
+    ADMIN_DELETE_USER_TOOL_NAME,
+    ADMIN_DELETE_USER_TOOL_DESCRIPTION,
+    {
+      id: z
+        .string()
+        .describe(
+          'User ID to delete (required). Note: Owner cannot be deleted.'
+        ),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminDeleteUserInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminDeleteUser(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_browse_roles tool
+  server.tool(
+    ADMIN_BROWSE_ROLES_TOOL_NAME,
+    ADMIN_BROWSE_ROLES_TOOL_DESCRIPTION,
+    {
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of roles to return (default: all)'),
+      fields: z
+        .string()
+        .optional()
+        .describe('Comma-separated list of fields to return'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseRolesInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseRoles(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_invite tool
+  server.tool(
+    ADMIN_CREATE_INVITE_TOOL_NAME,
+    ADMIN_CREATE_INVITE_TOOL_DESCRIPTION,
+    {
+      email: z
+        .string()
+        .email()
+        .describe('Email address to send invitation to (required)'),
+      role_id: z
+        .string()
+        .describe(
+          'Role ID to assign to the invited user (required). Use admin_browse_roles to get available role IDs.'
+        ),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateInviteInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateInvite(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -2812,3 +3201,7 @@ export * from './admin-tags/index.js';
 export * from './admin-members/index.js';
 export * from './admin-tiers/index.js';
 export * from './admin-newsletters/index.js';
+export * from './admin-offers/index.js';
+export * from './admin-users/index.js';
+export * from './admin-roles/index.js';
+export * from './admin-invites/index.js';

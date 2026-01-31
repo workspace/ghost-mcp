@@ -541,3 +541,41 @@ export interface AdminOffersResponse {
   offers: GhostOffer[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Ghost Invite resource.
+ */
+export interface GhostInvite {
+  id: string;
+  role_id: string;
+  email: string;
+  status?: 'pending' | 'sent';
+  token?: string;
+  expires?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Response from Admin API users endpoints.
+ */
+export interface AdminUsersResponse {
+  users: GhostAuthor[];
+  meta?: GhostApiMeta;
+}
+
+/**
+ * Response from Admin API roles endpoints.
+ */
+export interface AdminRolesResponse {
+  roles: GhostRole[];
+  meta?: GhostApiMeta;
+}
+
+/**
+ * Response from Admin API invites endpoints.
+ */
+export interface AdminInvitesResponse {
+  invites: GhostInvite[];
+  meta?: GhostApiMeta;
+}
