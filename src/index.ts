@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * ghost-mcp - MCP Server Entry Point
  *

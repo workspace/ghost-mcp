@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * ghost-mcp - SSE Transport Entry Point
  *

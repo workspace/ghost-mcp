@@ -1,9 +1,14 @@
 {
-  "name": "ghost-mcp",
+  "name": "@ryukimin/ghost-mcp",
   "version": "1.0.0",
   "type": "module",
+  "description": "MCP (Model Context Protocol) server for Ghost CMS - enables AI assistants to interact with Ghost blogs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "ghost-mcp": "dist/index.js",
+    "ghost-mcp-sse": "dist/sse.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -16,12 +21,39 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ghost",
+    "ghost-cms",
+    "cms",
+    "blog",
+    "ai",
+    "llm",
+    "claude",
+    "anthropic"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryukimin/ghost-mcp.git"
+  },
+  "homepage": "https://github.com/ryukimin/ghost-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/ryukimin/ghost-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "DEPLOYMENT.md"
+  ],
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/jsonwebtoken": "^9.0.10",
