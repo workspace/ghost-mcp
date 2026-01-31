@@ -142,6 +142,24 @@ import {
   ADMIN_UPDATE_MEMBER_TOOL_NAME,
   ADMIN_UPDATE_MEMBER_TOOL_DESCRIPTION,
 } from './admin-members/index.js';
+import {
+  executeAdminBrowseTiers,
+  executeAdminReadTier,
+  executeAdminCreateTier,
+  executeAdminUpdateTier,
+  AdminBrowseTiersInputSchema,
+  AdminReadTierInputSchema,
+  AdminCreateTierInputSchema,
+  AdminUpdateTierInputSchema,
+  ADMIN_BROWSE_TIERS_TOOL_NAME,
+  ADMIN_BROWSE_TIERS_TOOL_DESCRIPTION,
+  ADMIN_READ_TIER_TOOL_NAME,
+  ADMIN_READ_TIER_TOOL_DESCRIPTION,
+  ADMIN_CREATE_TIER_TOOL_NAME,
+  ADMIN_CREATE_TIER_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_TIER_TOOL_NAME,
+  ADMIN_UPDATE_TIER_TOOL_DESCRIPTION,
+} from './admin-tiers/index.js';
 
 /**
  * Configuration for Content API.
@@ -1962,6 +1980,293 @@ export function registerAdminApiTools(
       }
     }
   );
+
+  // Register admin_browse_tiers tool
+  server.tool(
+    ADMIN_BROWSE_TIERS_TOOL_NAME,
+    ADMIN_BROWSE_TIERS_TOOL_DESCRIPTION,
+    {
+      include: z
+        .string()
+        .optional()
+        .describe(
+          'Related data to include: monthly_price, yearly_price, benefits (comma-separated)'
+        ),
+      filter: z
+        .string()
+        .optional()
+        .describe(
+          'NQL filter expression (e.g., type:paid, visibility:public, active:true)'
+        ),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of tiers to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., name ASC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseTiersInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseTiers(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_read_tier tool
+  server.tool(
+    ADMIN_READ_TIER_TOOL_NAME,
+    ADMIN_READ_TIER_TOOL_DESCRIPTION,
+    {
+      id: z.string().optional().describe('Tier ID'),
+      slug: z.string().optional().describe('Tier slug'),
+      include: z
+        .string()
+        .optional()
+        .describe(
+          'Related data to include: monthly_price, yearly_price, benefits (comma-separated)'
+        ),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminReadTierInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminReadTier(adminClient, validatedInput);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_tier tool
+  server.tool(
+    ADMIN_CREATE_TIER_TOOL_NAME,
+    ADMIN_CREATE_TIER_TOOL_DESCRIPTION,
+    {
+      name: z.string().describe('Tier name (required)'),
+      slug: z.string().optional().describe('URL slug'),
+      description: z.string().nullable().optional().describe('Tier description'),
+      active: z
+        .boolean()
+        .optional()
+        .describe('Whether the tier is active (default: true)'),
+      type: z
+        .enum(['free', 'paid'])
+        .optional()
+        .describe('Tier type (default: paid)'),
+      welcome_page_url: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('URL to redirect members after signup'),
+      monthly_price: z
+        .number()
+        .int()
+        .nonnegative()
+        .nullable()
+        .optional()
+        .describe('Monthly price in smallest currency unit (e.g., cents)'),
+      yearly_price: z
+        .number()
+        .int()
+        .nonnegative()
+        .nullable()
+        .optional()
+        .describe('Yearly price in smallest currency unit (e.g., cents)'),
+      currency: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Currency code (e.g., usd, eur) - required for paid tiers'),
+      benefits: z
+        .array(z.string())
+        .optional()
+        .describe('List of benefits for this tier'),
+      visibility: z
+        .enum(['public', 'none'])
+        .optional()
+        .describe('Tier visibility (default: public)'),
+      trial_days: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe('Number of trial days for this tier'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateTierInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateTier(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_tier tool
+  server.tool(
+    ADMIN_UPDATE_TIER_TOOL_NAME,
+    ADMIN_UPDATE_TIER_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Tier ID (required)'),
+      updated_at: z
+        .string()
+        .describe(
+          'Current updated_at timestamp for conflict prevention (required)'
+        ),
+      name: z.string().optional().describe('Tier name'),
+      slug: z.string().optional().describe('URL slug'),
+      description: z.string().nullable().optional().describe('Tier description'),
+      active: z.boolean().optional().describe('Whether the tier is active'),
+      welcome_page_url: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('URL to redirect members after signup'),
+      monthly_price: z
+        .number()
+        .int()
+        .nonnegative()
+        .nullable()
+        .optional()
+        .describe('Monthly price in smallest currency unit (e.g., cents)'),
+      yearly_price: z
+        .number()
+        .int()
+        .nonnegative()
+        .nullable()
+        .optional()
+        .describe('Yearly price in smallest currency unit (e.g., cents)'),
+      benefits: z
+        .array(z.string())
+        .optional()
+        .describe('List of benefits for this tier'),
+      visibility: z
+        .enum(['public', 'none'])
+        .optional()
+        .describe('Tier visibility'),
+      trial_days: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe('Number of trial days for this tier'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateTierInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateTier(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
 }
 
 /**
@@ -1991,3 +2296,4 @@ export * from './admin-posts/index.js';
 export * from './admin-pages/index.js';
 export * from './admin-tags/index.js';
 export * from './admin-members/index.js';
+export * from './admin-tiers/index.js';

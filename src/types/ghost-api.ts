@@ -517,3 +517,11 @@ export interface AdminMembersResponse {
   members: GhostMember[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Admin API tiers endpoints.
+ */
+export interface AdminTiersResponse {
+  tiers: GhostTier[];
+  meta?: GhostApiMeta;
+}
