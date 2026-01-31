@@ -178,6 +178,20 @@ import {
   ADMIN_UPDATE_NEWSLETTER_TOOL_NAME,
   ADMIN_UPDATE_NEWSLETTER_TOOL_DESCRIPTION,
 } from './admin-newsletters/index.js';
+import {
+  executeAdminBrowseOffers,
+  executeAdminCreateOffer,
+  executeAdminUpdateOffer,
+  AdminBrowseOffersInputSchema,
+  AdminCreateOfferInputSchema,
+  AdminUpdateOfferInputSchema,
+  ADMIN_BROWSE_OFFERS_TOOL_NAME,
+  ADMIN_BROWSE_OFFERS_TOOL_DESCRIPTION,
+  ADMIN_CREATE_OFFER_TOOL_NAME,
+  ADMIN_CREATE_OFFER_TOOL_DESCRIPTION,
+  ADMIN_UPDATE_OFFER_TOOL_NAME,
+  ADMIN_UPDATE_OFFER_TOOL_DESCRIPTION,
+} from './admin-offers/index.js';
 
 /**
  * Configuration for Content API.
@@ -2526,6 +2540,218 @@ export function registerAdminApiTools(
         const validatedInput = AdminUpdateNewsletterInputSchema.parse(input);
         const adminClient = getClient();
         const result = await executeAdminUpdateNewsletter(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_browse_offers tool
+  server.tool(
+    ADMIN_BROWSE_OFFERS_TOOL_NAME,
+    ADMIN_BROWSE_OFFERS_TOOL_DESCRIPTION,
+    {
+      filter: z
+        .string()
+        .optional()
+        .describe(
+          'NQL filter expression (e.g., status:active, tier.id:xxx, cadence:month)'
+        ),
+      limit: z
+        .union([z.number().int().positive(), z.literal('all')])
+        .optional()
+        .describe('Number of offers to return (default: 15, or "all")'),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number for pagination'),
+      order: z
+        .string()
+        .optional()
+        .describe('Sort order (e.g., created_at DESC)'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminBrowseOffersInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminBrowseOffers(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_create_offer tool
+  server.tool(
+    ADMIN_CREATE_OFFER_TOOL_NAME,
+    ADMIN_CREATE_OFFER_TOOL_DESCRIPTION,
+    {
+      name: z.string().describe('Internal offer name (required)'),
+      code: z
+        .string()
+        .describe('URL shortcode for the offer (required, used in offer URLs)'),
+      tier: z.string().describe('Tier ID to apply this offer to (required)'),
+      cadence: z
+        .enum(['month', 'year'])
+        .describe('Billing cadence the offer applies to (required)'),
+      type: z
+        .enum(['percent', 'fixed', 'trial'])
+        .describe(
+          'Discount type: percent (1-100), fixed (amount in cents), or trial (days)'
+        ),
+      amount: z
+        .number()
+        .int()
+        .nonnegative()
+        .describe(
+          'Discount amount: percentage (1-100) for percent, cents for fixed, days for trial (required)'
+        ),
+      duration: z
+        .enum(['once', 'forever', 'repeating', 'trial'])
+        .describe(
+          'How long the discount lasts: once (first payment), forever, repeating (for duration_in_months), or trial'
+        ),
+      display_title: z
+        .string()
+        .optional()
+        .describe('Public-facing title shown to members'),
+      display_description: z
+        .string()
+        .optional()
+        .describe('Public-facing description shown to members'),
+      duration_in_months: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          'Number of months for repeating duration (required when duration is "repeating")'
+        ),
+      currency: z
+        .string()
+        .optional()
+        .describe(
+          'Three-letter ISO currency code (required for "fixed" type offers, e.g., usd, eur)'
+        ),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminCreateOfferInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminCreateOffer(
+          adminClient,
+          validatedInput
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof GhostApiError) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Ghost API Error: ${error.message}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // Register admin_update_offer tool
+  server.tool(
+    ADMIN_UPDATE_OFFER_TOOL_NAME,
+    ADMIN_UPDATE_OFFER_TOOL_DESCRIPTION,
+    {
+      id: z.string().describe('Offer ID (required)'),
+      updated_at: z
+        .string()
+        .describe(
+          'Current updated_at timestamp for conflict prevention (required)'
+        ),
+      name: z.string().optional().describe('Internal offer name'),
+      code: z.string().optional().describe('URL shortcode for the offer'),
+      display_title: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Public-facing title shown to members'),
+      display_description: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Public-facing description shown to members'),
+      status: z
+        .enum(['active', 'archived'])
+        .optional()
+        .describe('Offer status: active or archived'),
+    },
+    async (input) => {
+      try {
+        const validatedInput = AdminUpdateOfferInputSchema.parse(input);
+        const adminClient = getClient();
+        const result = await executeAdminUpdateOffer(
           adminClient,
           validatedInput
         );

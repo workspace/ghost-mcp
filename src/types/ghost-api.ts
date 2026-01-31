@@ -533,3 +533,11 @@ export interface AdminNewslettersResponse {
   newsletters: GhostNewsletter[];
   meta?: GhostApiMeta;
 }
+
+/**
+ * Response from Admin API offers endpoints.
+ */
+export interface AdminOffersResponse {
+  offers: GhostOffer[];
+  meta?: GhostApiMeta;
+}
