@@ -11,7 +11,9 @@ import type { AdminBrowseMembersInput } from './schemas.js';
 export const TOOL_NAME = 'admin_browse_members';
 
 export const TOOL_DESCRIPTION =
-  'Browse members from the Ghost Admin API. Returns members with optional filtering, pagination, and related data like labels and newsletters.';
+  'Browse members from the Ghost Admin API. ' +
+  'TIP: Use "fields" param (e.g., "id,email,name,status,created_at") to reduce response size. ' +
+  'Returns members with optional filtering, pagination, and related data like labels and newsletters.';
 
 export async function executeAdminBrowseMembers(
   client: GhostClient,

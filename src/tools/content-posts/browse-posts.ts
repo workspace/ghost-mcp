@@ -18,6 +18,8 @@ export const TOOL_NAME = 'content_browse_posts';
  */
 export const TOOL_DESCRIPTION = `Browse published posts from Ghost Content API (read-only, public content).
 
+TIP: Use "fields" param (e.g., "id,title,slug,published_at,excerpt") to reduce response size. Omit html field unless content is needed.
+
 USE CASE:
 - Display a list of blog posts on a website frontend
 - Search for posts by tag, author, or custom NQL filters

@@ -49,12 +49,19 @@ export const AdminBrowsePostsInputSchema = z.object({
   fields: z
     .string()
     .optional()
-    .describe('Comma-separated list of fields to return'),
+    .describe(
+      'Comma-separated list of fields to return. ' +
+        'IMPORTANT: Always specify to reduce response size. ' +
+        'For listing: "id,title,slug,status,published_at,excerpt,updated_at". ' +
+        'For full content, add: "html" or "lexical". ' +
+        'Omit html/lexical for large savings when content is not needed.'
+    ),
   formats: z
     .string()
     .optional()
     .describe(
-      'Content formats: html, lexical (comma-separated). Default is lexical'
+      'Content formats to include: html, lexical (comma-separated). ' +
+        'Only specify if you need content fields. Default is lexical.'
     ),
   filter: z
     .string()
@@ -92,11 +99,18 @@ export const AdminReadPostInputSchema = z
     fields: z
       .string()
       .optional()
-      .describe('Comma-separated list of fields to return'),
+      .describe(
+        'Comma-separated list of fields to return. ' +
+          'Specify fields to reduce response size. ' +
+          'Example: "id,title,slug,html,updated_at" for editing.'
+      ),
     formats: z
       .string()
       .optional()
-      .describe('Content formats: html, lexical (comma-separated)'),
+      .describe(
+        'Content formats to include: html, lexical (comma-separated). ' +
+          'Only specify if you need content fields.'
+      ),
   })
   .refine((data) => data.id !== undefined || data.slug !== undefined, {
     message: 'Either id or slug must be provided',

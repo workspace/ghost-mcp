@@ -18,6 +18,8 @@ export const TOOL_NAME = 'content_browse_pages';
  */
 export const TOOL_DESCRIPTION = `Browse published pages from Ghost Content API (read-only, public content).
 
+TIP: Use "fields" param (e.g., "id,title,slug,published_at,excerpt") to reduce response size. Omit html field unless content is needed.
+
 USE CASE:
 - Display static pages (About, Contact, Terms) on a website frontend
 - Build site navigation from published pages

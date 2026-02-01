@@ -18,12 +18,19 @@ export const BrowsePostsInputSchema = z.object({
 
   /**
    * Specific fields to return (comma-separated).
-   * Example: 'title,slug,published_at'
+   * IMPORTANT: Always specify to reduce response size.
+   * Example: 'id,title,slug,published_at,excerpt'
    */
   fields: z
     .string()
     .optional()
-    .describe('Comma-separated list of fields to return'),
+    .describe(
+      'Comma-separated list of fields to return. ' +
+        'IMPORTANT: Always specify to reduce response size. ' +
+        'For listing: "id,title,slug,published_at,excerpt,url". ' +
+        'For full content, add: "html". ' +
+        'Omit html for large savings when content is not needed.'
+    ),
 
   /**
    * Content format(s) to return (comma-separated).
@@ -32,7 +39,10 @@ export const BrowsePostsInputSchema = z.object({
   formats: z
     .string()
     .optional()
-    .describe('Content formats: html, plaintext, mobiledoc (comma-separated)'),
+    .describe(
+      'Content formats to include: html, plaintext, mobiledoc (comma-separated). ' +
+        'Only specify if you need content fields.'
+    ),
 
   /**
    * NQL filter expression.
@@ -108,7 +118,11 @@ export const ReadPostInputSchema = z
     fields: z
       .string()
       .optional()
-      .describe('Comma-separated list of fields to return'),
+      .describe(
+        'Comma-separated list of fields to return. ' +
+          'Specify fields to reduce response size. ' +
+          'Example: "id,title,slug,html" for reading content.'
+      ),
 
     /**
      * Content format(s) to return (comma-separated).
@@ -116,7 +130,10 @@ export const ReadPostInputSchema = z
     formats: z
       .string()
       .optional()
-      .describe('Content formats: html, plaintext, mobiledoc (comma-separated)'),
+      .describe(
+        'Content formats to include: html, plaintext, mobiledoc (comma-separated). ' +
+          'Only specify if you need content fields.'
+      ),
   })
   .refine((data) => data.id !== undefined || data.slug !== undefined, {
     message: 'Either id or slug must be provided',

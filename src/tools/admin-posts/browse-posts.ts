@@ -11,7 +11,9 @@ import type { AdminBrowsePostsInput } from './schemas.js';
 export const TOOL_NAME = 'admin_browse_posts';
 
 export const TOOL_DESCRIPTION =
-  'Browse posts from the Ghost Admin API. Returns all posts including drafts with optional filtering, pagination, and related data.';
+  'Browse posts from the Ghost Admin API. Returns all posts including drafts. ' +
+  'TIP: Use "fields" param (e.g., "id,title,slug,status,published_at,excerpt") to reduce response size. ' +
+  'Omit html/lexical fields unless content is needed.';
 
 export async function executeAdminBrowsePosts(
   client: GhostClient,

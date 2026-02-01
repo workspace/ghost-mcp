@@ -12,6 +12,8 @@ export const TOOL_NAME = 'admin_browse_pages';
 
 export const TOOL_DESCRIPTION = `Browse all pages from Ghost Admin API, including drafts.
 
+TIP: Use "fields" param (e.g., "id,title,slug,status,published_at,excerpt") to reduce response size. Omit html/lexical fields unless content is needed.
+
 USE CASE:
 - List all static pages (About, Contact, Terms, etc.)
 - Find pages by status (draft, published, scheduled)

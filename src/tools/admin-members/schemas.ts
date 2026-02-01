@@ -40,7 +40,12 @@ export const AdminBrowseMembersInputSchema = z.object({
   fields: z
     .string()
     .optional()
-    .describe('Comma-separated list of fields to return'),
+    .describe(
+      'Comma-separated list of fields to return. ' +
+        'IMPORTANT: Always specify to reduce response size. ' +
+        'For listing: "id,email,name,status,created_at". ' +
+        'Omit note, geolocation, subscriptions for large savings.'
+    ),
   filter: z
     .string()
     .optional()
@@ -86,7 +91,11 @@ export const AdminReadMemberInputSchema = z
     fields: z
       .string()
       .optional()
-      .describe('Comma-separated list of fields to return'),
+      .describe(
+        'Comma-separated list of fields to return. ' +
+          'Specify fields to reduce response size. ' +
+          'Example: "id,email,name,status,updated_at".'
+      ),
   })
   .refine((data) => data.id !== undefined || data.email !== undefined, {
     message: 'Either id or email must be provided',
