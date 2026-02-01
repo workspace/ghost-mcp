@@ -3290,7 +3290,16 @@ export function registerAdminApiTools(
     {
       file_path: z
         .string()
-        .describe('Path to the image file on the local filesystem'),
+        .optional()
+        .describe(
+          'Path to the image file on the local filesystem. Use when MCP server has filesystem access. Does NOT work in sandboxed environments like Claude Desktop.'
+        ),
+      url: z
+        .string()
+        .optional()
+        .describe(
+          'URL of the image to download and upload to Ghost. Recommended for Claude Desktop or when image is already hosted online.'
+        ),
       purpose: z
         .enum(['image', 'profile_image', 'icon'])
         .optional()
