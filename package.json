@@ -1,6 +1,6 @@
 {
   "name": "@ryukimin/ghost-mcp",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "description": "MCP (Model Context Protocol) server for Ghost CMS - enables AI assistants to interact with Ghost blogs",
   "main": "dist/index.js",
