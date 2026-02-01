@@ -63,6 +63,28 @@ function createTempImageFile(ext: string = '.png'): string {
   return tempFile;
 }
 
+// Helper to safely cleanup temp files
+function safeUnlink(filePath: string): void {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
+// Helper to safely cleanup temp directories
+function safeRmdir(dirPath: string): void {
+  try {
+    if (fs.existsSync(dirPath)) {
+      fs.rmdirSync(dirPath);
+    }
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
 // Restore fetch and cleanup after each test
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -74,12 +96,12 @@ afterEach(() => {
 // =============================================================================
 
 describe('AdminUploadImageInputSchema', () => {
-  it('should require file_path', () => {
+  it('should require file_path or url', () => {
     const result = AdminUploadImageInputSchema.safeParse({});
     expect(result.success).toBe(false);
   });
 
-  it('should reject empty file_path', () => {
+  it('should reject empty file_path without url', () => {
     const result = AdminUploadImageInputSchema.safeParse({ file_path: '' });
     expect(result.success).toBe(false);
   });
@@ -94,7 +116,33 @@ describe('AdminUploadImageInputSchema', () => {
     }
   });
 
-  it('should accept all valid parameters', () => {
+  it('should accept url only', () => {
+    const result = AdminUploadImageInputSchema.safeParse({
+      url: 'https://example.com/image.png',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.url).toBe('https://example.com/image.png');
+      expect(result.data.purpose).toBe('image');
+    }
+  });
+
+  it('should reject both file_path and url', () => {
+    const result = AdminUploadImageInputSchema.safeParse({
+      file_path: '/path/to/image.png',
+      url: 'https://example.com/image.png',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid url', () => {
+    const result = AdminUploadImageInputSchema.safeParse({
+      url: 'not-a-valid-url',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept all valid parameters with file_path', () => {
     const result = AdminUploadImageInputSchema.safeParse({
       file_path: '/path/to/image.png',
       purpose: 'profile_image',
@@ -103,6 +151,20 @@ describe('AdminUploadImageInputSchema', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.file_path).toBe('/path/to/image.png');
+      expect(result.data.purpose).toBe('profile_image');
+      expect(result.data.ref).toBe('my-reference');
+    }
+  });
+
+  it('should accept all valid parameters with url', () => {
+    const result = AdminUploadImageInputSchema.safeParse({
+      url: 'https://example.com/image.png',
+      purpose: 'profile_image',
+      ref: 'my-reference',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.url).toBe('https://example.com/image.png');
       expect(result.data.purpose).toBe('profile_image');
       expect(result.data.ref).toBe('my-reference');
     }
@@ -169,7 +231,7 @@ describe('executeAdminUploadImage', () => {
         })
       ).rejects.toThrow('Unsupported file type');
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -189,7 +251,7 @@ describe('executeAdminUploadImage', () => {
         })
       ).rejects.toThrow('Path is not a file');
     } finally {
-      fs.rmdirSync(tempDir);
+      safeRmdir(tempDir);
     }
   });
 
@@ -225,7 +287,7 @@ describe('executeAdminUploadImage', () => {
       expect(result.images).toBeDefined();
       expect(result.images[0].url).toBe(expectedResponse.images[0].url);
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -257,7 +319,7 @@ describe('executeAdminUploadImage', () => {
 
       expect(result.images[0].ref).toBe('my-custom-ref');
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -282,7 +344,7 @@ describe('executeAdminUploadImage', () => {
         })
       ).rejects.toThrow(GhostApiError);
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -319,7 +381,7 @@ describe('executeAdminUploadImage', () => {
 
       expect(result.images[0].url).toContain('icon.ico');
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -343,7 +405,7 @@ describe('executeAdminUploadImage', () => {
         })
       ).rejects.toThrow('Unsupported file type');
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -368,7 +430,7 @@ describe('executeAdminUploadImage', () => {
         })
       ).rejects.toThrow(GhostApiError);
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -402,7 +464,7 @@ describe('executeAdminUploadImage', () => {
 
       expect(result.images[0].url).toContain('.jpg');
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
   });
 
@@ -435,7 +497,108 @@ describe('executeAdminUploadImage', () => {
       expect(result.images).toBeDefined();
       expect(result.images.length).toBe(1);
     } finally {
-      fs.unlinkSync(tempFile);
+      safeUnlink(tempFile);
     }
+  });
+
+  // URL upload tests
+  it('should upload image from URL', async () => {
+    const client = new GhostClient({
+      url: TEST_URL,
+      apiKey: TEST_ADMIN_API_KEY,
+    });
+
+    const expectedResponse = {
+      images: [
+        {
+          url: 'https://example.ghost.io/content/images/uploaded.png',
+          ref: null,
+        },
+      ],
+    };
+
+    // Mock both the image fetch and the Ghost API upload
+    let fetchCount = 0;
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      fetchCount++;
+
+      // First fetch is for the image URL
+      if (url === 'https://external.com/image.png') {
+        return new Response(Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
+          status: 200,
+          headers: { 'content-type': 'image/png' },
+        });
+      }
+
+      // Second fetch is for the Ghost API
+      return new Response(JSON.stringify(expectedResponse), {
+        status: 201,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    const result = await executeAdminUploadImage(client, {
+      url: 'https://external.com/image.png',
+      purpose: 'image',
+    });
+
+    expect(fetchCount).toBe(2);
+    expect(result.images[0].url).toBe(expectedResponse.images[0].url);
+  });
+
+  it('should throw error when URL fetch fails', async () => {
+    const client = new GhostClient({
+      url: TEST_URL,
+      apiKey: TEST_ADMIN_API_KEY,
+    });
+
+    globalThis.fetch = vi.fn(async () => {
+      return new Response(null, {
+        status: 404,
+        statusText: 'Not Found',
+      });
+    });
+
+    await expect(
+      executeAdminUploadImage(client, {
+        url: 'https://external.com/notfound.png',
+        purpose: 'image',
+      })
+    ).rejects.toThrow('Failed to fetch image from URL');
+  });
+
+  it('should throw error for unsupported URL content type', async () => {
+    const client = new GhostClient({
+      url: TEST_URL,
+      apiKey: TEST_ADMIN_API_KEY,
+    });
+
+    globalThis.fetch = vi.fn(async () => {
+      return new Response('text content', {
+        status: 200,
+        headers: { 'content-type': 'text/plain' },
+      });
+    });
+
+    await expect(
+      executeAdminUploadImage(client, {
+        url: 'https://external.com/file.txt',
+        purpose: 'image',
+      })
+    ).rejects.toThrow('Unsupported image type');
+  });
+
+  it('should require either file_path or url', async () => {
+    const client = new GhostClient({
+      url: TEST_URL,
+      apiKey: TEST_ADMIN_API_KEY,
+    });
+
+    await expect(
+      executeAdminUploadImage(client, {
+        purpose: 'image',
+      } as { file_path?: string; url?: string; purpose: 'image' })
+    ).rejects.toThrow('Either file_path or url must be provided');
   });
 });
