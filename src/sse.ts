@@ -116,7 +116,7 @@ function configureAuthApp(
   options?: CreateAppOptions
 ): express.Application {
   const port = parseInt(process.env.PORT || String(DEFAULT_PORT), 10);
-  const baseUrl = options?.baseUrl ?? `http://localhost:${port}`;
+  const baseUrl = options?.baseUrl ?? process.env.GHOST_MCP_ISSUER_URL ?? `http://localhost:${port}`;
   const issuerUrl = new URL(baseUrl);
 
   // Resolve admin password and secret key
@@ -503,7 +503,8 @@ function configureNoAuthApp(app: express.Application): express.Application {
 async function main(): Promise<void> {
   const port = parseInt(process.env.PORT || String(DEFAULT_PORT), 10);
   const useAuth = shouldEnableAuth();
-  const app = createApp({ baseUrl: `http://localhost:${port}` });
+  const baseUrl = process.env.GHOST_MCP_ISSUER_URL ?? `http://localhost:${port}`;
+  const app = createApp({ baseUrl });
 
   const server = app.listen(port, () => {
     console.log(`ghost-mcp SSE server listening on port ${port}`);
