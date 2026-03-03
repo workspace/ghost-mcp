@@ -4,7 +4,7 @@ const sidebars: SidebarsConfig = {
   docsSidebar: [
     'intro',
     'getting-started',
-    'configuration',
+    'remote-setup',
     {
       type: 'category',
       label: 'Tools Reference',
@@ -43,20 +43,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'nql-reference',
-    {
-      type: 'category',
-      label: 'Deployment',
-      items: [
-        'deployment/overview',
-        'deployment/local-stdio',
-        'deployment/remote-sse',
-        'deployment/docker',
-        'deployment/systemd-nginx',
-        'deployment/cloud',
-        'deployment/production',
-      ],
-    },
-    'troubleshooting',
   ],
 };
 

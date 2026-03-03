@@ -69,8 +69,8 @@ const config: Config = {
           title: 'Docs',
           items: [
             { label: 'Getting Started', to: '/docs/getting-started' },
+            { label: 'Remote Setup', to: '/docs/remote-setup' },
             { label: 'Tools Reference', to: '/docs/tools/content-api' },
-            { label: 'Deployment', to: '/docs/deployment/overview' },
           ],
         },
         {

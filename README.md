@@ -9,7 +9,9 @@ An MCP (Model Context Protocol) server for interacting with Ghost CMS blogs thro
 
 ## Quick Start
 
-Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
+### Local (stdio)
+
+Add to your Claude Desktop `claude_desktop_config.json`:
 
 ```json
 {
@@ -20,7 +22,7 @@ Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
       "env": {
         "GHOST_URL": "https://your-blog.ghost.io",
         "GHOST_CONTENT_API_KEY": "your-content-api-key",
-        "GHOST_ADMIN_API_KEY": "your-admin-api-key"
+        "GHOST_ADMIN_API_KEY": "your-admin-id:your-admin-secret"
       }
     }
   }
@@ -31,18 +33,27 @@ Config file location:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
+### Remote (Docker)
+
+```bash
+docker compose up -d
+```
+
+See [Remote Setup](https://workspace.github.io/ghost-mcp/docs/remote-setup) for the full guide.
+
 ## Features
 
 - **Content API** (read-only): Browse and read posts, pages, tags, and authors (8 tools)
 - **Admin API** (full CRUD): Create, update, and delete posts, pages, tags, members, newsletters, tiers, offers, webhooks, and more (46 tools)
-- **Multiple transports**: stdio for local development, HTTP/SSE for remote deployment
+- **Dual transport**: stdio for local, Streamable HTTP for remote deployment
+- **OAuth 2.1**: Secure per-user authentication for remote mode
 
 ## Getting API Keys
 
 1. In Ghost Admin, go to **Settings > Integrations**
 2. Create a new Custom Integration
 3. Copy the **Content API Key** for read-only access
-4. Copy the **Admin API Key** for full access
+4. Copy the **Admin API Key** for full access (`id:secret` format)
 
 ## Development
 
@@ -58,12 +69,10 @@ npm run lint       # Lint code
 ## Documentation
 
 - [Getting Started](https://workspace.github.io/ghost-mcp/docs/getting-started)
-- [Configuration](https://workspace.github.io/ghost-mcp/docs/configuration)
+- [Remote Setup](https://workspace.github.io/ghost-mcp/docs/remote-setup)
 - [Tools Reference](https://workspace.github.io/ghost-mcp/docs/tools/content-api)
 - [Usage Examples](https://workspace.github.io/ghost-mcp/docs/examples/content-api-examples)
 - [NQL Filter Reference](https://workspace.github.io/ghost-mcp/docs/nql-reference)
-- [Deployment Guide](https://workspace.github.io/ghost-mcp/docs/deployment/overview)
-- [Troubleshooting](https://workspace.github.io/ghost-mcp/docs/troubleshooting)
 
 ## License
 
