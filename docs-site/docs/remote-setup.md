@@ -57,7 +57,7 @@ GHOST_ADMIN_API_KEY=your-admin-id:your-admin-secret
 
 # Required for per-user (OAuth) mode
 # GHOST_MCP_ADMIN_PASSWORD=your-admin-password
-# GHOST_MCP_SECRET_KEY=<64-char-hex-string>
+# GHOST_MCP_SECRET_KEY=<64-char-hex-string>  # Generate with: openssl rand -hex 32
 ```
 
 ### 3. Start the server
@@ -84,7 +84,7 @@ curl http://localhost:3000/health
 | `PORT` | No | `3000` | HTTP server port |
 | `MCP_AUTH` | No | auto | `true` / `false` to force OAuth on/off. Auto-detected if omitted |
 | `GHOST_MCP_ADMIN_PASSWORD` | Conditional | — | Admin login password. Required when OAuth is enabled |
-| `GHOST_MCP_SECRET_KEY` | Conditional | — | 64-char hex string for encryption. Required when OAuth is enabled |
+| `GHOST_MCP_SECRET_KEY` | Conditional | — | 64-char hex string for encryption. Required when OAuth is enabled. Generate with `openssl rand -hex 32` |
 | `GHOST_MCP_ISSUER_URL` | No | `http://localhost:{PORT}` | OAuth issuer URL (set to your public URL in production) |
 | `NODE_ENV` | No | — | Set to `production` for production deployments |
 

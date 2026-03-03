@@ -61,6 +61,6 @@ curl http://localhost:3000/health
 | `PORT` | No | `3000` | HTTP server port |
 | `MCP_AUTH` | No | auto | `true`/`false` to force OAuth on/off |
 | `GHOST_MCP_ADMIN_PASSWORD` | Conditional | — | Admin login password. Required when OAuth is enabled |
-| `GHOST_MCP_SECRET_KEY` | Conditional | — | 64-char hex string for encryption. Required when OAuth is enabled |
+| `GHOST_MCP_SECRET_KEY` | Conditional | — | 64-char hex string for encryption. Required when OAuth is enabled. Generate with `openssl rand -hex 32` |
 | `GHOST_MCP_ISSUER_URL` | No | `http://localhost:{PORT}` | OAuth issuer URL |
 | `NODE_ENV` | No | — | Set to `production` for production |
