@@ -30,6 +30,9 @@ services:
       - GHOST_ADMIN_API_KEY=${GHOST_ADMIN_API_KEY:-}
       - GHOST_API_VERSION=${GHOST_API_VERSION:-v5.0}
       - MCP_AUTH=${MCP_AUTH:-}
+      - GHOST_MCP_ADMIN_PASSWORD=${GHOST_MCP_ADMIN_PASSWORD:-}
+      - GHOST_MCP_SECRET_KEY=${GHOST_MCP_SECRET_KEY:-}
+      - GHOST_MCP_ISSUER_URL=${GHOST_MCP_ISSUER_URL:-}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
@@ -51,6 +54,10 @@ GHOST_ADMIN_API_KEY=your-admin-id:your-admin-secret
 # PORT=3000
 # GHOST_API_VERSION=v5.0
 # MCP_AUTH=true
+
+# Required for per-user (OAuth) mode
+# GHOST_MCP_ADMIN_PASSWORD=your-admin-password
+# GHOST_MCP_SECRET_KEY=<64-char-hex-string>
 ```
 
 ### 3. Start the server
@@ -76,11 +83,14 @@ curl http://localhost:3000/health
 | `GHOST_API_VERSION` | No | `v5.0` | Ghost API version |
 | `PORT` | No | `3000` | HTTP server port |
 | `MCP_AUTH` | No | auto | `true` / `false` to force OAuth on/off. Auto-detected if omitted |
+| `GHOST_MCP_ADMIN_PASSWORD` | Conditional | — | Admin login password. Required when OAuth is enabled |
+| `GHOST_MCP_SECRET_KEY` | Conditional | — | 64-char hex string for encryption. Required when OAuth is enabled |
+| `GHOST_MCP_ISSUER_URL` | No | `http://localhost:{PORT}` | OAuth issuer URL (set to your public URL in production) |
 | `NODE_ENV` | No | — | Set to `production` for production deployments |
 
 :::info Shared vs Per-user mode
 - **Shared mode**: Set `GHOST_URL` + API keys. All clients use the same Ghost site.
-- **Per-user mode**: Omit `GHOST_URL` (or set `MCP_AUTH=true`). OAuth is enabled and each user configures their own Ghost credentials via the browser.
+- **Per-user mode**: Omit `GHOST_URL` (or set `MCP_AUTH=true`). OAuth is enabled. Set `GHOST_MCP_ADMIN_PASSWORD` and `GHOST_MCP_SECRET_KEY` to protect the admin settings page. Users log in with the admin password, configure Ghost credentials at `/settings`, and OAuth uses those stored credentials.
 :::
 
 ## MCP Client Configuration

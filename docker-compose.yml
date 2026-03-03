@@ -12,6 +12,9 @@ services:
       - GHOST_ADMIN_API_KEY=${GHOST_ADMIN_API_KEY:-}
       - GHOST_API_VERSION=${GHOST_API_VERSION:-v5.0}
       - MCP_AUTH=${MCP_AUTH:-}
+      - GHOST_MCP_ADMIN_PASSWORD=${GHOST_MCP_ADMIN_PASSWORD:-}
+      - GHOST_MCP_SECRET_KEY=${GHOST_MCP_SECRET_KEY:-}
+      - GHOST_MCP_ISSUER_URL=${GHOST_MCP_ISSUER_URL:-}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s

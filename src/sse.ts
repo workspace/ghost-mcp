@@ -9,6 +9,8 @@
  *
  * When MCP_AUTH=true or GHOST_URL is not set, OAuth 2.1 authentication is enabled,
  * allowing per-user Ghost configuration via the browser-based authorization flow.
+ * In auth mode, an admin password and secret key are required to protect
+ * the settings page where Ghost credentials are configured.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -21,6 +23,10 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import { createServer } from './index.js';
 import { GhostOAuthProvider } from './auth/index.js';
+import { CredentialStore } from './auth/credential-store.js';
+import { safeCompare } from './auth/crypto.js';
+import { setSessionCookie, getSessionFromRequest, clearSessionCookie } from './auth/session.js';
+import { renderLoginPage, renderSettingsPage } from './auth/pages.js';
 import type { ToolRegistrationConfig } from './tools/index.js';
 
 // Default port for SSE server
@@ -40,6 +46,12 @@ export interface CreateAppOptions {
   baseUrl?: string;
   /** Custom OAuth provider (for testing) */
   oauthProvider?: GhostOAuthProvider;
+  /** Admin password for login (auth mode) */
+  adminPassword?: string;
+  /** Secret key for encryption/sessions (64-char hex) */
+  secretKey?: string;
+  /** Custom credential store (for testing) */
+  credentialStore?: CredentialStore;
 }
 
 /**
@@ -103,72 +115,137 @@ function configureAuthApp(
   app: express.Application,
   options?: CreateAppOptions
 ): express.Application {
-  const provider = options?.oauthProvider ?? new GhostOAuthProvider();
   const port = parseInt(process.env.PORT || String(DEFAULT_PORT), 10);
-  const issuerUrl = new URL(
-    options?.baseUrl ?? `http://localhost:${port}`
-  );
+  const baseUrl = options?.baseUrl ?? `http://localhost:${port}`;
+  const issuerUrl = new URL(baseUrl);
 
-  // Custom POST /authorize handler (form submission from the authorization page).
-  // Must be registered BEFORE mcpAuthRouter so it takes precedence for POST /authorize.
-  app.post('/authorize', express.urlencoded({ extended: false }), async (req: Request, res: Response) => {
-    try {
-      const {
-        client_id,
-        redirect_uri,
-        state,
-        code_challenge,
-        resource,
-        ghost_url,
-        ghost_admin_api_key,
-        ghost_content_api_key,
-      } = req.body;
+  // Resolve admin password and secret key
+  const adminPassword = options?.adminPassword ?? process.env.GHOST_MCP_ADMIN_PASSWORD;
+  const secretKey = options?.secretKey ?? process.env.GHOST_MCP_SECRET_KEY;
 
-      const result = await provider.handleAuthorizationSubmit(
-        client_id,
-        {
-          redirectUri: redirect_uri,
-          state: state || undefined,
-          codeChallenge: code_challenge,
-          resource: resource || undefined,
-        },
-        {
-          ghostUrl: ghost_url,
-          ghostAdminApiKey: ghost_admin_api_key || undefined,
-          ghostContentApiKey: ghost_content_api_key || undefined,
-        }
-      );
+  if (!adminPassword) {
+    throw new Error('GHOST_MCP_ADMIN_PASSWORD is required in auth mode');
+  }
+  if (!secretKey || secretKey.length !== 64) {
+    throw new Error('GHOST_MCP_SECRET_KEY must be a 64-character hex string (32 bytes)');
+  }
 
-      // Redirect back with the authorization code
-      const redirectUrl = new URL(result.redirectUri);
-      redirectUrl.searchParams.set('code', result.code);
-      if (result.state) {
-        redirectUrl.searchParams.set('state', result.state);
-      }
-      res.redirect(redirectUrl.toString());
-    } catch (error) {
-      // Redirect with error
-      const redirectUri = req.body?.redirect_uri;
-      if (redirectUri) {
-        try {
-          const errorUrl = new URL(redirectUri);
-          errorUrl.searchParams.set('error', 'invalid_request');
-          errorUrl.searchParams.set(
-            'error_description',
-            error instanceof Error ? error.message : 'Authorization failed'
-          );
-          res.redirect(errorUrl.toString());
-          return;
-        } catch {
-          // Fall through if redirect_uri is invalid
-        }
-      }
-      res.status(400).json({
-        error: 'invalid_request',
-        error_description:
-          error instanceof Error ? error.message : 'Authorization failed',
-      });
+  // Create or use provided credential store and oauth provider
+  const credentialStore = options?.credentialStore ?? new CredentialStore(secretKey);
+  const provider = options?.oauthProvider ?? new GhostOAuthProvider({
+    credentialStore,
+    issuerUrl: baseUrl,
+  });
+
+  // ----- Login routes -----
+  app.get('/login', (req: Request, res: Response) => {
+    const returnTo = req.query.returnTo as string | undefined;
+    res.type('html').send(renderLoginPage({ returnTo }));
+  });
+
+  app.post('/login', express.urlencoded({ extended: false }), (req: Request, res: Response) => {
+    const { password, returnTo } = req.body;
+
+    if (!password || !safeCompare(password, adminPassword)) {
+      res.type('html').send(renderLoginPage({
+        error: 'Invalid password.',
+        returnTo,
+      }));
+      return;
     }
+
+    setSessionCookie(res, secretKey);
+
+    if (returnTo) {
+      // returnTo points to /authorize?... — redirect to /settings with returnTo preserved
+      const settingsUrl = new URL(`${baseUrl}/settings`);
+      settingsUrl.searchParams.set('returnTo', returnTo);
+      res.redirect(settingsUrl.toString());
+    } else {
+      res.redirect('/settings');
+    }
+  });
+
+  // ----- Settings routes -----
+  app.get('/settings', (req: Request, res: Response) => {
+    if (!getSessionFromRequest(req, secretKey)) {
+      const loginUrl = new URL(`${baseUrl}/login`);
+      const currentUrl = new URL(`${baseUrl}/settings`);
+      const returnTo = req.query.returnTo as string | undefined;
+      if (returnTo) {
+        currentUrl.searchParams.set('returnTo', returnTo);
+      }
+      loginUrl.searchParams.set('returnTo', currentUrl.toString());
+      res.redirect(loginUrl.toString());
+      return;
+    }
+
+    const returnTo = req.query.returnTo as string | undefined;
+    const existing = credentialStore.has() ? credentialStore.get() : null;
+
+    res.type('html').send(renderSettingsPage({
+      ghostUrl: existing?.ghostUrl,
+      ghostAdminApiKey: existing?.ghostAdminApiKey ? '********' : undefined,
+      ghostContentApiKey: existing?.ghostContentApiKey ? '********' : undefined,
+      returnTo,
+    }));
+  });
+
+  app.post('/settings', express.urlencoded({ extended: false }), (req: Request, res: Response) => {
+    if (!getSessionFromRequest(req, secretKey)) {
+      res.redirect('/login');
+      return;
+    }
+
+    const { ghost_url, ghost_admin_api_key, ghost_content_api_key, returnTo } = req.body;
+
+    if (!ghost_url) {
+      res.type('html').send(renderSettingsPage({
+        error: 'Ghost URL is required.',
+        returnTo,
+      }));
+      return;
+    }
+
+    // Merge with existing credentials (blank fields keep current values)
+    const existing = credentialStore.has() ? credentialStore.get() : null;
+    const adminApiKey = ghost_admin_api_key || existing?.ghostAdminApiKey;
+    const contentApiKey = ghost_content_api_key || existing?.ghostContentApiKey;
+
+    if (!adminApiKey && !contentApiKey) {
+      res.type('html').send(renderSettingsPage({
+        ghostUrl: ghost_url,
+        error: 'At least one API key (Admin or Content) is required.',
+        returnTo,
+      }));
+      return;
+    }
+
+    credentialStore.save({
+      ghostUrl: ghost_url,
+      ghostAdminApiKey: adminApiKey || undefined,
+      ghostContentApiKey: contentApiKey || undefined,
+    });
+
+    // If returnTo is an /authorize URL, redirect there so OAuth can complete
+    if (returnTo) {
+      res.redirect(returnTo);
+      return;
+    }
+
+    // No returnTo — show success on settings page
+    res.type('html').send(renderSettingsPage({
+      ghostUrl: ghost_url,
+      ghostAdminApiKey: adminApiKey ? '********' : undefined,
+      ghostContentApiKey: contentApiKey ? '********' : undefined,
+      success: 'Settings saved successfully.',
+    }));
+  });
+
+  // ----- Logout route -----
+  app.post('/logout', (_req: Request, res: Response) => {
+    clearSessionCookie(res);
+    res.redirect('/login');
   });
 
   // Mount the MCP auth router (handles /.well-known/*, GET /authorize, POST /token, POST /register, POST /revoke)
@@ -460,6 +537,11 @@ ${useAuth ? `
    - /token (POST)
    - /register (POST)
    - /revoke (POST)
+
+5. Admin Endpoints
+   - /login (GET/POST)
+   - /settings (GET/POST)
+   - /logout (POST)
 ` : ''}==============================================
 `);
   });
@@ -510,8 +592,10 @@ export {
   DEFAULT_PORT,
 };
 
-// Run the server
-main().catch((error: unknown) => {
-  console.error('Failed to start SSE server:', error);
-  process.exit(1);
-});
+// Run the server (skip during test imports)
+if (!process.env.VITEST) {
+  main().catch((error: unknown) => {
+    console.error('Failed to start SSE server:', error);
+    process.exit(1);
+  });
+}

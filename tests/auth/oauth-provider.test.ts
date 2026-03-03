@@ -1,14 +1,26 @@
+import { randomBytes } from 'node:crypto';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GhostOAuthProvider } from '../../src/auth/index.js';
+import { CredentialStore } from '../../src/auth/credential-store.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
+
+const TEST_KEY = randomBytes(32).toString('hex');
 
 // Helper to create a mock Express response
 function createMockResponse(): {
-  res: { type: ReturnType<typeof import('vitest').vi.fn>; send: ReturnType<typeof import('vitest').vi.fn>; sentBody?: string; sentType?: string };
+  res: {
+    type: (t: string) => typeof res;
+    send: (body: string) => typeof res;
+    redirect: (url: string) => void;
+    sentBody?: string;
+    sentType?: string;
+    redirectUrl?: string;
+  };
 } {
   const res = {
     sentType: undefined as string | undefined,
     sentBody: undefined as string | undefined,
+    redirectUrl: undefined as string | undefined,
     type(t: string) {
       res.sentType = t;
       return res;
@@ -17,8 +29,11 @@ function createMockResponse(): {
       res.sentBody = body;
       return res;
     },
+    redirect(url: string) {
+      res.redirectUrl = url;
+    },
   };
-  return { res: res as never };
+  return { res };
 }
 
 const mockClient: OAuthClientInformationFull = {
@@ -62,7 +77,7 @@ describe('GhostOAuthProvider', () => {
   });
 
   describe('authorize', () => {
-    it('should render an HTML authorization page', async () => {
+    it('should redirect to /login when no credentials stored', async () => {
       const { res } = createMockResponse();
       await provider.authorize(mockClient, {
         redirectUri: 'http://localhost/callback',
@@ -70,15 +85,51 @@ describe('GhostOAuthProvider', () => {
         codeChallenge: 'challenge123',
       }, res as never);
 
-      expect(res.sentType).toBe('html');
-      expect(res.sentBody).toContain('Connect to Ghost');
-      expect(res.sentBody).toContain('test-client-id');
-      expect(res.sentBody).toContain('http://localhost/callback');
-      expect(res.sentBody).toContain('test-state');
-      expect(res.sentBody).toContain('challenge123');
+      expect(res.redirectUrl).toBeDefined();
+      expect(res.redirectUrl).toContain('/login');
+      expect(res.redirectUrl).toContain('returnTo=');
     });
 
-    it('should render page with resource parameter', async () => {
+    it('should redirect with auth code when credentials are stored', async () => {
+      const credStore = new CredentialStore(TEST_KEY);
+      credStore.save(validGhostConfig);
+      const providerWithCreds = new GhostOAuthProvider({
+        credentialStore: credStore,
+        issuerUrl: 'http://localhost:3000',
+      });
+
+      const { res } = createMockResponse();
+      await providerWithCreds.authorize(mockClient, {
+        redirectUri: 'http://localhost/callback',
+        state: 'test-state',
+        codeChallenge: 'challenge123',
+      }, res as never);
+
+      expect(res.redirectUrl).toBeDefined();
+      expect(res.redirectUrl).toContain('http://localhost/callback');
+      expect(res.redirectUrl).toContain('code=');
+      expect(res.redirectUrl).toContain('state=test-state');
+    });
+
+    it('should redirect without state when state is not provided', async () => {
+      const credStore = new CredentialStore(TEST_KEY);
+      credStore.save(validGhostConfig);
+      const providerWithCreds = new GhostOAuthProvider({
+        credentialStore: credStore,
+        issuerUrl: 'http://localhost:3000',
+      });
+
+      const { res } = createMockResponse();
+      await providerWithCreds.authorize(mockClient, {
+        redirectUri: 'http://localhost/callback',
+        codeChallenge: 'challenge123',
+      }, res as never);
+
+      expect(res.redirectUrl).toContain('code=');
+      expect(res.redirectUrl).not.toContain('state=');
+    });
+
+    it('should include resource in login redirect', async () => {
       const { res } = createMockResponse();
       await provider.authorize(mockClient, {
         redirectUri: 'http://localhost/callback',
@@ -86,73 +137,46 @@ describe('GhostOAuthProvider', () => {
         resource: new URL('http://localhost:3000'),
       }, res as never);
 
-      expect(res.sentBody).toContain('http://localhost:3000');
-    });
-
-    it('should render page without optional state', async () => {
-      const { res } = createMockResponse();
-      await provider.authorize(mockClient, {
-        redirectUri: 'http://localhost/callback',
-        codeChallenge: 'challenge123',
-      }, res as never);
-
-      expect(res.sentBody).not.toContain('name="state"');
+      expect(res.redirectUrl).toContain('/login');
+      // resource is URL-encoded inside the returnTo parameter
+      const returnTo = decodeURIComponent(res.redirectUrl!.split('returnTo=')[1]);
+      expect(returnTo).toContain('resource=');
     });
   });
 
-  describe('handleAuthorizationSubmit', () => {
-    it('should generate an authorization code', async () => {
-      const result = await provider.handleAuthorizationSubmit(
+  describe('issueAuthorizationCode', () => {
+    it('should generate an authorization code', () => {
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
       );
 
-      expect(result.code).toBeDefined();
-      expect(result.code).toMatch(/^[0-9a-f]{64}$/);
-      expect(result.redirectUri).toBe(validParams.redirectUri);
-      expect(result.state).toBe(validParams.state);
+      expect(code).toBeDefined();
+      expect(code).toMatch(/^[0-9a-f]{64}$/);
     });
 
-    it('should reject when no API keys provided', async () => {
-      await expect(
-        provider.handleAuthorizationSubmit(
-          mockClient.client_id,
-          validParams,
-          { ghostUrl: 'https://example.ghost.io' }
-        )
-      ).rejects.toThrow('At least one API key');
-    });
-
-    it('should reject when Ghost URL is empty', async () => {
-      await expect(
-        provider.handleAuthorizationSubmit(
-          mockClient.client_id,
-          validParams,
-          { ghostUrl: '', ghostAdminApiKey: 'some-key' }
-        )
-      ).rejects.toThrow('Ghost URL is required');
-    });
-
-    it('should accept content API key only', async () => {
-      const result = await provider.handleAuthorizationSubmit(
+    it('should allow code to be used for challenge retrieval', async () => {
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
-        { ghostUrl: 'https://example.ghost.io', ghostContentApiKey: 'content-key-123' }
+        validGhostConfig
       );
-      expect(result.code).toBeDefined();
+
+      const challenge = await provider.challengeForAuthorizationCode(mockClient, code);
+      expect(challenge).toBe(validParams.codeChallenge);
     });
   });
 
   describe('challengeForAuthorizationCode', () => {
     it('should return the code challenge', async () => {
-      const result = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
       );
 
-      const challenge = await provider.challengeForAuthorizationCode(mockClient, result.code);
+      const challenge = await provider.challengeForAuthorizationCode(mockClient, code);
       expect(challenge).toBe(validParams.codeChallenge);
     });
 
@@ -165,7 +189,7 @@ describe('GhostOAuthProvider', () => {
 
   describe('exchangeAuthorizationCode', () => {
     it('should exchange code for tokens', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
@@ -179,7 +203,7 @@ describe('GhostOAuthProvider', () => {
     });
 
     it('should consume the code (single-use)', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
@@ -201,7 +225,7 @@ describe('GhostOAuthProvider', () => {
 
   describe('verifyAccessToken', () => {
     it('should verify a valid access token and return Ghost config in extra', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
@@ -224,7 +248,7 @@ describe('GhostOAuthProvider', () => {
 
   describe('exchangeRefreshToken', () => {
     it('should issue new tokens and revoke old refresh token', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
@@ -260,7 +284,7 @@ describe('GhostOAuthProvider', () => {
 
   describe('revokeToken', () => {
     it('should revoke an access token', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
@@ -278,7 +302,7 @@ describe('GhostOAuthProvider', () => {
     });
 
     it('should revoke a refresh token', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig
@@ -296,7 +320,7 @@ describe('GhostOAuthProvider', () => {
     });
 
     it('should handle revocation without hint', async () => {
-      const { code } = await provider.handleAuthorizationSubmit(
+      const code = provider.issueAuthorizationCode(
         mockClient.client_id,
         validParams,
         validGhostConfig

@@ -1,13 +1,34 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApp, shouldEnableAuth, toolConfigFromAuthInfo, DEFAULT_PORT } from '../src/sse.js';
 import { GhostOAuthProvider } from '../src/auth/index.js';
+import { CredentialStore } from '../src/auth/credential-store.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 
 // PKCE S256 helper: challenge = base64url(sha256(verifier))
 const PKCE_VERIFIER = 'test-code-verifier-that-is-long-enough';
 const PKCE_CHALLENGE = createHash('sha256').update(PKCE_VERIFIER).digest('base64url');
+
+// Test credentials for auth mode
+const TEST_ADMIN_PASSWORD = 'test-password-123';
+const TEST_SECRET_KEY = randomBytes(32).toString('hex');
+
+function createAuthApp(options?: { credentialStore?: CredentialStore; oauthProvider?: GhostOAuthProvider }) {
+  const credentialStore = options?.credentialStore ?? new CredentialStore(TEST_SECRET_KEY);
+  const provider = options?.oauthProvider ?? new GhostOAuthProvider({
+    credentialStore,
+    issuerUrl: 'http://localhost:3000',
+  });
+  return createApp({
+    auth: true,
+    baseUrl: 'http://localhost:3000',
+    adminPassword: TEST_ADMIN_PASSWORD,
+    secretKey: TEST_SECRET_KEY,
+    credentialStore,
+    oauthProvider: provider,
+  });
+}
 
 describe('ghost-mcp SSE transport', () => {
   describe('configuration', () => {
@@ -18,6 +39,23 @@ describe('ghost-mcp SSE transport', () => {
     it('should create an Express app', () => {
       const app = createApp({ auth: false });
       expect(app).toBeDefined();
+    });
+
+    it('should throw when auth mode is missing admin password', () => {
+      expect(() => createApp({
+        auth: true,
+        baseUrl: 'http://localhost:3000',
+        secretKey: TEST_SECRET_KEY,
+      })).toThrow('GHOST_MCP_ADMIN_PASSWORD is required');
+    });
+
+    it('should throw when auth mode has invalid secret key', () => {
+      expect(() => createApp({
+        auth: true,
+        baseUrl: 'http://localhost:3000',
+        adminPassword: TEST_ADMIN_PASSWORD,
+        secretKey: 'too-short',
+      })).toThrow('GHOST_MCP_SECRET_KEY must be a 64-character hex string');
     });
   });
 
@@ -183,15 +221,9 @@ describe('ghost-mcp SSE transport', () => {
   });
 
   describe('auth mode (OAuth 2.1)', () => {
-    let provider: GhostOAuthProvider;
-
-    beforeEach(() => {
-      provider = new GhostOAuthProvider();
-    });
-
     describe('health endpoint', () => {
       it('should respond with ok status and auth=true', async () => {
-        const app = createApp({ auth: true, oauthProvider: provider });
+        const app = createAuthApp();
         const response = await request(app).get('/health');
 
         expect(response.status).toBe(200);
@@ -199,13 +231,185 @@ describe('ghost-mcp SSE transport', () => {
       });
     });
 
+    describe('login flow', () => {
+      it('should render login page on GET /login', async () => {
+        const app = createAuthApp();
+        const response = await request(app).get('/login');
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Admin Login');
+        expect(response.text).toContain('password');
+      });
+
+      it('should render login page with returnTo', async () => {
+        const app = createAuthApp();
+        const response = await request(app)
+          .get('/login')
+          .query({ returnTo: 'http://localhost:3000/authorize?client_id=test' });
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('returnTo');
+      });
+
+      it('should reject wrong password on POST /login', async () => {
+        const app = createAuthApp();
+        const response = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: 'wrong-password' });
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid password');
+      });
+
+      it('should set session cookie and redirect on correct password', async () => {
+        const app = createAuthApp();
+        const response = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toContain('/settings');
+        expect(response.headers['set-cookie']).toBeDefined();
+        expect(response.headers['set-cookie'][0]).toContain('ghost_mcp_session');
+      });
+
+      it('should redirect to /settings with returnTo after login', async () => {
+        const app = createAuthApp();
+        const response = await request(app)
+          .post('/login')
+          .type('form')
+          .send({
+            password: TEST_ADMIN_PASSWORD,
+            returnTo: 'http://localhost:3000/authorize?client_id=test',
+          });
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toContain('/settings');
+        expect(response.headers.location).toContain('returnTo=');
+      });
+    });
+
+    describe('settings flow', () => {
+      it('should redirect to /login when accessing /settings without session', async () => {
+        const app = createAuthApp();
+        const response = await request(app).get('/settings');
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toContain('/login');
+      });
+
+      it('should render settings page with valid session', async () => {
+        const app = createAuthApp();
+
+        // Login first
+        const loginResponse = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+
+        const cookies = loginResponse.headers['set-cookie'];
+
+        // Access settings with session cookie
+        const response = await request(app)
+          .get('/settings')
+          .set('Cookie', cookies);
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Ghost Settings');
+        expect(response.text).toContain('ghost_url');
+      });
+
+      it('should save credentials on POST /settings', async () => {
+        const app = createAuthApp();
+
+        // Login first
+        const loginResponse = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+        const cookies = loginResponse.headers['set-cookie'];
+
+        // Save settings
+        const response = await request(app)
+          .post('/settings')
+          .set('Cookie', cookies)
+          .type('form')
+          .send({
+            ghost_url: 'https://example.ghost.io',
+            ghost_admin_api_key: 'test-admin-key',
+          });
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Settings saved successfully');
+      });
+
+      it('should reject POST /settings without ghost_url', async () => {
+        const app = createAuthApp();
+
+        const loginResponse = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+        const cookies = loginResponse.headers['set-cookie'];
+
+        const response = await request(app)
+          .post('/settings')
+          .set('Cookie', cookies)
+          .type('form')
+          .send({ ghost_admin_api_key: 'test-admin-key' });
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Ghost URL is required');
+      });
+
+      it('should reject POST /settings without any API key', async () => {
+        const app = createAuthApp();
+
+        const loginResponse = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+        const cookies = loginResponse.headers['set-cookie'];
+
+        const response = await request(app)
+          .post('/settings')
+          .set('Cookie', cookies)
+          .type('form')
+          .send({ ghost_url: 'https://example.ghost.io' });
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('At least one API key');
+      });
+
+      it('should redirect to returnTo after saving settings', async () => {
+        const app = createAuthApp();
+
+        const loginResponse = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+        const cookies = loginResponse.headers['set-cookie'];
+
+        const response = await request(app)
+          .post('/settings')
+          .set('Cookie', cookies)
+          .type('form')
+          .send({
+            ghost_url: 'https://example.ghost.io',
+            ghost_admin_api_key: 'test-admin-key',
+            returnTo: 'http://localhost:3000/authorize?client_id=test',
+          });
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toContain('/authorize');
+      });
+    });
+
     describe('OAuth discovery endpoints', () => {
       it('should serve OAuth authorization server metadata', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
+        const app = createAuthApp();
         const response = await request(app).get(
           '/.well-known/oauth-authorization-server'
         );
@@ -218,11 +422,7 @@ describe('ghost-mcp SSE transport', () => {
       });
 
       it('should serve protected resource metadata', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
+        const app = createAuthApp();
         const response = await request(app).get(
           '/.well-known/oauth-protected-resource'
         );
@@ -234,11 +434,7 @@ describe('ghost-mcp SSE transport', () => {
 
     describe('dynamic client registration', () => {
       it('should register a new client', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
+        const app = createAuthApp();
         const response = await request(app)
           .post('/register')
           .set('Content-Type', 'application/json')
@@ -254,12 +450,8 @@ describe('ghost-mcp SSE transport', () => {
     });
 
     describe('authorization flow', () => {
-      it('should render authorization page on GET /authorize', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
+      it('should redirect to /login on GET /authorize when no credentials', async () => {
+        const app = createAuthApp();
 
         // Register a client first
         const regResponse = await request(app)
@@ -281,17 +473,18 @@ describe('ghost-mcp SSE transport', () => {
             code_challenge_method: 'S256',
           });
 
-        expect(response.status).toBe(200);
-        expect(response.text).toContain('Connect to Ghost');
-        expect(response.text).toContain(clientId);
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toContain('/login');
+        expect(response.headers.location).toContain('returnTo=');
       });
 
-      it('should handle POST /authorize form submission', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
+      it('should redirect with code on GET /authorize when credentials are stored', async () => {
+        const credentialStore = new CredentialStore(TEST_SECRET_KEY);
+        credentialStore.save({
+          ghostUrl: 'https://example.ghost.io',
+          ghostAdminApiKey: 'test-admin-key',
         });
+        const app = createAuthApp({ credentialStore });
 
         // Register a client
         const regResponse = await request(app)
@@ -304,65 +497,24 @@ describe('ghost-mcp SSE transport', () => {
         const clientId = regResponse.body.client_id;
 
         const response = await request(app)
-          .post('/authorize')
-          .type('form')
-          .send({
+          .get('/authorize')
+          .query({
             client_id: clientId,
             redirect_uri: 'http://localhost/callback',
-            code_challenge: 'test-challenge',
-            state: 'test-state',
-            ghost_url: 'https://example.ghost.io',
-            ghost_admin_api_key: 'test-admin-key',
+            response_type: 'code',
+            code_challenge: PKCE_CHALLENGE,
+            code_challenge_method: 'S256',
           });
 
-        // Should redirect with authorization code
         expect(response.status).toBe(302);
-        const location = response.headers.location;
-        expect(location).toContain('http://localhost/callback');
-        expect(location).toContain('code=');
-        expect(location).toContain('state=test-state');
-      });
-
-      it('should reject POST /authorize without API keys', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
-
-        const regResponse = await request(app)
-          .post('/register')
-          .set('Content-Type', 'application/json')
-          .send({
-            redirect_uris: ['http://localhost/callback'],
-            client_name: 'Test Client',
-          });
-        const clientId = regResponse.body.client_id;
-
-        const response = await request(app)
-          .post('/authorize')
-          .type('form')
-          .send({
-            client_id: clientId,
-            redirect_uri: 'http://localhost/callback',
-            code_challenge: 'test-challenge',
-            ghost_url: 'https://example.ghost.io',
-          });
-
-        // Should redirect with error
-        expect(response.status).toBe(302);
-        const location = response.headers.location;
-        expect(location).toContain('error=invalid_request');
+        expect(response.headers.location).toContain('http://localhost/callback');
+        expect(response.headers.location).toContain('code=');
       });
     });
 
     describe('protected MCP endpoints', () => {
       it('should reject /mcp without bearer token', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
+        const app = createAuthApp();
 
         const response = await request(app)
           .post('/mcp')
@@ -383,11 +535,7 @@ describe('ghost-mcp SSE transport', () => {
       });
 
       it('should reject /mcp with invalid bearer token', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
-        });
+        const app = createAuthApp();
 
         const response = await request(app)
           .post('/mcp')
@@ -409,13 +557,19 @@ describe('ghost-mcp SSE transport', () => {
       });
 
       it('should accept /mcp with valid bearer token and initialize', async () => {
-        const app = createApp({
-          auth: true,
-          baseUrl: 'http://localhost:3000',
-          oauthProvider: provider,
+        // Pre-store credentials
+        const credentialStore = new CredentialStore(TEST_SECRET_KEY);
+        credentialStore.save({
+          ghostUrl: 'https://example.ghost.io',
+          ghostAdminApiKey: 'test-admin-key',
         });
+        const provider = new GhostOAuthProvider({
+          credentialStore,
+          issuerUrl: 'http://localhost:3000',
+        });
+        const app = createAuthApp({ credentialStore, oauthProvider: provider });
 
-        // Full OAuth flow to get an access token
+        // Register client
         const regResponse = await request(app)
           .post('/register')
           .set('Content-Type', 'application/json')
@@ -426,23 +580,22 @@ describe('ghost-mcp SSE transport', () => {
           });
         const clientId = regResponse.body.client_id;
 
-        // Submit authorization with proper PKCE S256 challenge
+        // Authorize (should auto-redirect with code since credentials exist)
         const authResponse = await request(app)
-          .post('/authorize')
-          .type('form')
-          .send({
+          .get('/authorize')
+          .query({
             client_id: clientId,
             redirect_uri: 'http://localhost/callback',
+            response_type: 'code',
             code_challenge: PKCE_CHALLENGE,
-            ghost_url: 'https://example.ghost.io',
-            ghost_admin_api_key: 'test-admin-key',
+            code_challenge_method: 'S256',
           });
 
         const location = new URL(authResponse.headers.location);
         const code = location.searchParams.get('code');
         expect(code).toBeDefined();
 
-        // Exchange code for token with matching PKCE verifier
+        // Exchange code for token
         const tokenResponse = await request(app)
           .post('/token')
           .type('form')
@@ -477,6 +630,90 @@ describe('ghost-mcp SSE transport', () => {
 
         expect(mcpResponse.status).toBe(200);
         expect(mcpResponse.headers['mcp-session-id']).toBeDefined();
+      });
+    });
+
+    describe('full login → settings → authorize flow', () => {
+      it('should complete the full flow', async () => {
+        const credentialStore = new CredentialStore(TEST_SECRET_KEY);
+        const provider = new GhostOAuthProvider({
+          credentialStore,
+          issuerUrl: 'http://localhost:3000',
+        });
+        const app = createAuthApp({ credentialStore, oauthProvider: provider });
+
+        // 1. Register client
+        const regResponse = await request(app)
+          .post('/register')
+          .set('Content-Type', 'application/json')
+          .send({
+            redirect_uris: ['http://localhost/callback'],
+            client_name: 'Test Client',
+            token_endpoint_auth_method: 'none',
+          });
+        const clientId = regResponse.body.client_id;
+
+        // 2. GET /authorize → should redirect to /login (no credentials yet)
+        const authorizeResponse = await request(app)
+          .get('/authorize')
+          .query({
+            client_id: clientId,
+            redirect_uri: 'http://localhost/callback',
+            response_type: 'code',
+            code_challenge: PKCE_CHALLENGE,
+            code_challenge_method: 'S256',
+          });
+        expect(authorizeResponse.status).toBe(302);
+        expect(authorizeResponse.headers.location).toContain('/login');
+
+        // 3. POST /login → get session cookie
+        const loginResponse = await request(app)
+          .post('/login')
+          .type('form')
+          .send({ password: TEST_ADMIN_PASSWORD });
+        expect(loginResponse.status).toBe(302);
+        const cookies = loginResponse.headers['set-cookie'];
+
+        // 4. POST /settings → save Ghost credentials
+        const settingsResponse = await request(app)
+          .post('/settings')
+          .set('Cookie', cookies)
+          .type('form')
+          .send({
+            ghost_url: 'https://example.ghost.io',
+            ghost_admin_api_key: 'test-admin-key',
+          });
+        expect(settingsResponse.status).toBe(200);
+        expect(settingsResponse.text).toContain('Settings saved');
+
+        // 5. GET /authorize again → should redirect with code (credentials now stored)
+        const authorize2 = await request(app)
+          .get('/authorize')
+          .query({
+            client_id: clientId,
+            redirect_uri: 'http://localhost/callback',
+            response_type: 'code',
+            code_challenge: PKCE_CHALLENGE,
+            code_challenge_method: 'S256',
+          });
+        expect(authorize2.status).toBe(302);
+        expect(authorize2.headers.location).toContain('code=');
+
+        // 6. Exchange code for token
+        const location = new URL(authorize2.headers.location);
+        const code = location.searchParams.get('code')!;
+        const tokenResponse = await request(app)
+          .post('/token')
+          .type('form')
+          .send({
+            grant_type: 'authorization_code',
+            code,
+            client_id: clientId,
+            redirect_uri: 'http://localhost/callback',
+            code_verifier: PKCE_VERIFIER,
+          });
+        expect(tokenResponse.status).toBe(200);
+        expect(tokenResponse.body.access_token).toBeDefined();
       });
     });
   });

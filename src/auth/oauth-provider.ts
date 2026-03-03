@@ -2,8 +2,9 @@
  * GhostOAuthProvider - OAuthServerProvider implementation for Ghost MCP.
  *
  * Implements the MCP SDK's OAuthServerProvider interface to provide
- * OAuth 2.1 authentication with Ghost CMS credentials. Users authenticate
- * by entering their Ghost URL and API keys through a browser-based form.
+ * OAuth 2.1 authentication with Ghost CMS credentials. When credentials
+ * are stored in the CredentialStore, authorization codes are issued
+ * immediately. Otherwise, users are redirected to /login.
  */
 
 import { Response } from 'express';
@@ -11,7 +12,7 @@ import type { OAuthServerProvider, AuthorizationParams } from '@modelcontextprot
 import type { OAuthRegisteredClientsStore } from '@modelcontextprotocol/sdk/server/auth/clients.js';
 import type { OAuthClientInformationFull, OAuthTokens, OAuthTokenRevocationRequest } from '@modelcontextprotocol/sdk/shared/auth.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
-import { InvalidGrantError, InvalidRequestError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
+import { InvalidGrantError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import {
   InMemoryClientsStore,
   AuthorizationCodeStore,
@@ -20,94 +21,21 @@ import {
 } from './oauth-store.js';
 import type { GhostOAuthConfig } from './oauth-types.js';
 import { OAUTH_CONSTANTS } from './oauth-types.js';
-
-/**
- * Renders the Ghost credentials authorization page.
- */
-function renderAuthorizePage(params: {
-  clientId: string;
-  redirectUri: string;
-  state?: string;
-  codeChallenge: string;
-  resource?: string;
-}): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connect to Ghost - Ghost MCP</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: white; border-radius: 12px; padding: 2rem; max-width: 480px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #15171a; }
-    p.desc { color: #738a94; margin-bottom: 1.5rem; font-size: 0.9rem; }
-    label { display: block; font-weight: 600; margin-bottom: 0.25rem; color: #15171a; font-size: 0.9rem; }
-    input[type="text"], input[type="url"] { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #dfe1e3; border-radius: 6px; font-size: 0.9rem; margin-bottom: 1rem; }
-    input:focus { outline: none; border-color: #15171a; }
-    .hint { color: #738a94; font-size: 0.8rem; margin-top: -0.75rem; margin-bottom: 1rem; }
-    button { width: 100%; padding: 0.75rem; background: #15171a; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
-    button:hover { background: #2c3039; }
-    .error { color: #e25440; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Connect to Ghost</h1>
-    <p class="desc">Enter your Ghost site credentials to connect via MCP.</p>
-    <div class="error" id="error"></div>
-    <form method="POST" action="/authorize" id="authForm">
-      <input type="hidden" name="client_id" value="${escapeHtml(params.clientId)}" />
-      <input type="hidden" name="redirect_uri" value="${escapeHtml(params.redirectUri)}" />
-      <input type="hidden" name="code_challenge" value="${escapeHtml(params.codeChallenge)}" />
-      ${params.state ? `<input type="hidden" name="state" value="${escapeHtml(params.state)}" />` : ''}
-      ${params.resource ? `<input type="hidden" name="resource" value="${escapeHtml(params.resource)}" />` : ''}
-      <label for="ghost_url">Ghost URL *</label>
-      <input type="url" id="ghost_url" name="ghost_url" placeholder="https://your-site.ghost.io" required />
-      <p class="hint">Your Ghost site URL (e.g., https://example.ghost.io)</p>
-      <label for="ghost_admin_api_key">Admin API Key</label>
-      <input type="text" id="ghost_admin_api_key" name="ghost_admin_api_key" placeholder="64-character hex key" />
-      <p class="hint">Found in Ghost Admin &rarr; Settings &rarr; Integrations</p>
-      <label for="ghost_content_api_key">Content API Key</label>
-      <input type="text" id="ghost_content_api_key" name="ghost_content_api_key" placeholder="Content API key" />
-      <p class="hint">Read-only access. At least one API key is required.</p>
-      <button type="submit">Connect</button>
-    </form>
-  </div>
-  <script>
-    document.getElementById('authForm').addEventListener('submit', function(e) {
-      var admin = document.getElementById('ghost_admin_api_key').value.trim();
-      var content = document.getElementById('ghost_content_api_key').value.trim();
-      if (!admin && !content) {
-        e.preventDefault();
-        var err = document.getElementById('error');
-        err.textContent = 'Please provide at least one API key (Admin or Content).';
-        err.style.display = 'block';
-      }
-    });
-  </script>
-</body>
-</html>`;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+import type { CredentialStore } from './credential-store.js';
 
 export class GhostOAuthProvider implements OAuthServerProvider {
   private readonly _clientsStore: InMemoryClientsStore;
   private readonly authCodeStore: AuthorizationCodeStore;
   private readonly tokenStore: TokenStore;
+  private readonly credentialStore?: CredentialStore;
+  private readonly issuerUrl?: string;
 
-  constructor() {
+  constructor(options?: { credentialStore?: CredentialStore; issuerUrl?: string }) {
     this._clientsStore = new InMemoryClientsStore();
     this.authCodeStore = new AuthorizationCodeStore();
     this.tokenStore = new TokenStore();
+    this.credentialStore = options?.credentialStore;
+    this.issuerUrl = options?.issuerUrl;
   }
 
   get clientsStore(): OAuthRegisteredClientsStore {
@@ -115,51 +43,56 @@ export class GhostOAuthProvider implements OAuthServerProvider {
   }
 
   /**
-   * Renders the authorization page with Ghost credentials form.
-   * Called by the SDK for GET /authorize.
+   * Handles GET /authorize.
+   * If credentials are stored, issues an auth code and redirects back.
+   * If not, redirects to /login with returnTo pointing back to this authorize URL.
    */
   async authorize(
     client: OAuthClientInformationFull,
     params: AuthorizationParams,
     res: Response
   ): Promise<void> {
-    const html = renderAuthorizePage({
-      clientId: client.client_id,
-      redirectUri: params.redirectUri,
-      state: params.state,
-      codeChallenge: params.codeChallenge,
-      resource: params.resource?.toString(),
-    });
-    res.type('html').send(html);
+    if (this.credentialStore?.has()) {
+      // Credentials available - issue auth code and redirect
+      const ghostConfig = this.credentialStore.get()!;
+      const code = this.issueAuthorizationCode(client.client_id, params, ghostConfig);
+      const redirectUrl = new URL(params.redirectUri);
+      redirectUrl.searchParams.set('code', code);
+      if (params.state) {
+        redirectUrl.searchParams.set('state', params.state);
+      }
+      res.redirect(redirectUrl.toString());
+    } else {
+      // No credentials - redirect to /login
+      const authorizeParams = new URLSearchParams();
+      authorizeParams.set('client_id', client.client_id);
+      authorizeParams.set('redirect_uri', params.redirectUri);
+      authorizeParams.set('code_challenge', params.codeChallenge);
+      authorizeParams.set('code_challenge_method', 'S256');
+      authorizeParams.set('response_type', 'code');
+      if (params.state) {
+        authorizeParams.set('state', params.state);
+      }
+      if (params.resource) {
+        authorizeParams.set('resource', params.resource.toString());
+      }
+
+      const baseUrl = this.issuerUrl ?? '';
+      const authorizeUrl = `${baseUrl}/authorize?${authorizeParams.toString()}`;
+      const loginParams = new URLSearchParams({ returnTo: authorizeUrl });
+      res.redirect(`${baseUrl}/login?${loginParams.toString()}`);
+    }
   }
 
   /**
-   * Handles the POST /authorize form submission.
-   * Validates Ghost config and generates an authorization code.
-   * This is a custom method (not part of OAuthServerProvider interface),
-   * called from the custom POST /authorize route handler.
+   * Issues an authorization code for the given client and Ghost config.
+   * Used internally by authorize() and by the settings redirect flow.
    */
-  async handleAuthorizationSubmit(
+  issueAuthorizationCode(
     clientId: string,
-    params: {
-      redirectUri: string;
-      state?: string;
-      codeChallenge: string;
-      resource?: string;
-    },
+    params: { redirectUri: string; state?: string; codeChallenge: string; resource?: string | URL },
     ghostConfig: GhostOAuthConfig
-  ): Promise<{ code: string; redirectUri: string; state?: string }> {
-    // Validate at least one API key
-    if (!ghostConfig.ghostAdminApiKey && !ghostConfig.ghostContentApiKey) {
-      throw new InvalidRequestError('At least one API key (Admin or Content) is required');
-    }
-
-    // Validate Ghost URL
-    if (!ghostConfig.ghostUrl) {
-      throw new InvalidRequestError('Ghost URL is required');
-    }
-
-    // Generate authorization code
+  ): string {
     const code = generateRandomToken();
     this.authCodeStore.save({
       code,
@@ -168,14 +101,9 @@ export class GhostOAuthProvider implements OAuthServerProvider {
       redirectUri: params.redirectUri,
       ghostConfig,
       expiresAt: Date.now() + OAUTH_CONSTANTS.AUTH_CODE_EXPIRY * 1000,
-      resource: params.resource,
+      resource: params.resource?.toString(),
     });
-
-    return {
-      code,
-      redirectUri: params.redirectUri,
-      state: params.state,
-    };
+    return code;
   }
 
   /**
