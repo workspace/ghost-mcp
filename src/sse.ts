@@ -19,7 +19,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
-import { createServer, getToolConfig } from './index.js';
+import { createServer } from './index.js';
 import { GhostOAuthProvider } from './auth/index.js';
 import type { ToolRegistrationConfig } from './tools/index.js';
 

@@ -16,6 +16,14 @@ export type {
   ParsedApiKey,
 } from './auth.js';
 
+// OAuth types (re-exported from auth module for convenience)
+export type {
+  GhostOAuthConfig,
+  AuthorizationCodeRecord,
+  AccessTokenRecord,
+  RefreshTokenRecord,
+} from '../auth/oauth-types.js';
+
 export type {
   GhostClientConfig,
   GhostRequestOptions,
