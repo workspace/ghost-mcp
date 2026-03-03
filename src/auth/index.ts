@@ -27,3 +27,5 @@ export {
   AuthorizationCodeStore,
   TokenStore,
 } from './oauth-store.js';
+
+export { GhostOAuthProvider } from './oauth-provider.js';
