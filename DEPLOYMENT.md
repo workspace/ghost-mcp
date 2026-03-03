@@ -1,5 +1,9 @@
 # Deployment Guide
 
+> **Full documentation site**: [https://workspace.github.io/ghost-mcp/docs/deployment/overview](https://workspace.github.io/ghost-mcp/docs/deployment/overview)
+>
+> This file is kept for reference. For the latest deployment documentation, visit the docs site.
+
 This guide covers deploying the Ghost MCP server in both local (stdio) and remote (SSE/HTTP) modes.
 
 ## Table of Contents
