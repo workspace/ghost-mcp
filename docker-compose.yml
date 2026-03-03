@@ -1,0 +1,21 @@
+services:
+  ghost-mcp:
+    image: ghcr.io/workspace/ghost-mcp:latest
+    container_name: ghost-mcp
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - GHOST_URL=${GHOST_URL:-}
+      - GHOST_CONTENT_API_KEY=${GHOST_CONTENT_API_KEY:-}
+      - GHOST_ADMIN_API_KEY=${GHOST_ADMIN_API_KEY:-}
+      - GHOST_API_VERSION=${GHOST_API_VERSION:-v5.0}
+      - MCP_AUTH=${MCP_AUTH:-}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
